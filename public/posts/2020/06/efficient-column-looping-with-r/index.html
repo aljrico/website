@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="author" content="Alejandro Jiménez Rico ">
+<meta name="description" content="I’d bet most R developers have - or will have - faced the issue of having to optimise a big piece of code. Some processes might take way too much time, or they are filling memory space until the session explodes and everything crashes.
+One of the most infamous caveats of programming with R is how slow it can be to loop through columns of a data.frame. It has been widely discussed and everyone knows that you shouldn’t use a for loop to iterate a function over many columns, you should use the apply() family for that." />
+<meta name="keywords" content=", untagged" />
+<meta name="robots" content="noodp" />
+<meta name="theme-color" content="#252627" />
+<link rel="canonical" href="https://aljrico.com/posts/2020/06/efficient-column-looping-with-r/" />
+
+
+    <title>
+        
+            Efficient Column Looping with R :: Alejandro J Rico  — Hello Friend NG Theme
+        
+    </title>
+
+
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/3.2.1/css/flag-icon.min.css" rel="stylesheet"
+    type="text/css">
+
+
+
+<link rel="stylesheet" href="https://aljrico.com/main.435bbdd5eb7d91e6110f02e36297276498e5269f94d60e15cb192dbff8fec07f.css">
+
+
+
+
+    <link rel="apple-touch-icon" sizes="180x180" href="https://aljrico.com/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="https://aljrico.com/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="https://aljrico.com/favicon-16x16.png">
+    <link rel="manifest" href="https://aljrico.com/site.webmanifest">
+    <link rel="mask-icon" href="https://aljrico.com/safari-pinned-tab.svg" color="#252627">
+    <link rel="shortcut icon" href="https://aljrico.com/favicon.ico">
+    <meta name="msapplication-TileColor" content="#252627">
+    <meta name="theme-color" content="#252627">
+
+
+
+<meta itemprop="name" content="Efficient Column Looping with R">
+<meta itemprop="description" content="I’d bet most R developers have - or will have - faced the issue of having to optimise a big piece of code. Some processes might take way too much time, or they are filling memory space until the session explodes and everything crashes.
+One of the most infamous caveats of programming with R is how slow it can be to loop through columns of a data.frame. It has been widely discussed and everyone knows that you shouldn’t use a for loop to iterate a function over many columns, you should use the apply() family for that.">
+<meta itemprop="datePublished" content="2020-06-07T00:00:00&#43;00:00" />
+<meta itemprop="dateModified" content="2020-06-07T00:00:00&#43;00:00" />
+<meta itemprop="wordCount" content="1176">
+<meta itemprop="image" content="https://aljrico.com/"/>
+
+
+
+<meta itemprop="keywords" content="untagged," />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://aljrico.com/"/>
+
+<meta name="twitter:title" content="Efficient Column Looping with R"/>
+<meta name="twitter:description" content="I’d bet most R developers have - or will have - faced the issue of having to optimise a big piece of code. Some processes might take way too much time, or they are filling memory space until the session explodes and everything crashes.
+One of the most infamous caveats of programming with R is how slow it can be to loop through columns of a data.frame. It has been widely discussed and everyone knows that you shouldn’t use a for loop to iterate a function over many columns, you should use the apply() family for that."/>
+
+
+
+    <meta property="og:title" content="Efficient Column Looping with R" />
+<meta property="og:description" content="I’d bet most R developers have - or will have - faced the issue of having to optimise a big piece of code. Some processes might take way too much time, or they are filling memory space until the session explodes and everything crashes.
+One of the most infamous caveats of programming with R is how slow it can be to loop through columns of a data.frame. It has been widely discussed and everyone knows that you shouldn’t use a for loop to iterate a function over many columns, you should use the apply() family for that." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://aljrico.com/posts/2020/06/efficient-column-looping-with-r/" />
+<meta property="og:image" content="https://aljrico.com/"/>
+<meta property="article:published_time" content="2020-06-07T00:00:00+00:00" />
+<meta property="article:modified_time" content="2020-06-07T00:00:00+00:00" />
+
+
+
+
+
+
+    <meta property="article:published_time" content="2020-06-07 00:00:00 &#43;0000 UTC" />
+
+
+
+
+
+
+
+
+    </head>
+
+    <body class="">
+        <div class="container">
+            <header class="header">
+    <span class="header__inner">
+        <a href="https://aljrico.com/" style="text-decoration: none;">
+    <div class="logo">
+        
+            <span class="logo__mark">></span>
+            <span class="logo__text">$ cd /home/</span>
+            <span class="logo__cursor" style=
+                  "
+                   background-color:#FFCC66;
+                   animation-duration:1s;">
+            </span>
+        
+    </div>
+</a>
+
+
+        <span class="header__right">
+            
+                <nav class="menu">
+    <ul class="menu__inner"><li><a href="https://aljrico.com/about/">About</a></li><li><a href="https://aljrico.com/posts/">Posts</a></li><li><a href="https://aljrico.com/projects/">Projects</a></li>
+    </ul>
+</nav>
+
+                <span class="menu-trigger">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M0 0h24v24H0z" fill="none"/>
+                        <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+                    </svg>
+                </span>
+            
+
+            <span class="theme-toggle unselectable"><svg class="theme-toggler" width="24" height="24" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M22 41C32.4934 41 41 32.4934 41 22C41 11.5066 32.4934 3 22
+  3C11.5066 3 3 11.5066 3 22C3 32.4934 11.5066 41 22 41ZM7 22C7
+  13.7157 13.7157 7 22 7V37C13.7157 37 7 30.2843 7 22Z"/>
+</svg>
+</span>
+        </span>
+    </span>
+</header>
+
+
+            <div class="content">
+                
+    <main class="post">
+
+        <div class="post-info">
+            <p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-clock"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>6 minutes
+
+            
+
+            </p>
+        </div>
+
+        <article>
+            <h1 class="post-title">
+                <a href="https://aljrico.com/posts/2020/06/efficient-column-looping-with-r/">Efficient Column Looping with R</a>
+            </h1>
+
+            
+
+            <div class="post-content">
+                <p>I’d bet most R developers have - or will have - faced the issue of
+having to optimise a big piece of code. Some processes might take way
+too much time, or they are filling memory space until the session
+explodes and everything crashes.</p>
+<p>One of the most infamous caveats of programming with R is how slow it
+can be to loop through columns of a data.frame. It has been widely
+discussed and everyone knows that you shouldn’t use a <code>for</code> loop to
+iterate a function over many columns, you should use the <code>apply()</code>
+family for that. But we also know that sometimes you just can’t avoid
+using classic loops, for example when your calculation depends on
+previous iterations.</p>
+<p>So here I want to introduce you to a very simple way to dynamically
+create columns blazingly fast in a loop. We are going to make use of
+<code>data.table</code>, as it’s usual when we want to optimise R code, and its
+fantastic <a href="https://cran.r-project.org/web/packages/data.table/vignettes/datatable-reference-semantics.html">modification by
+reference</a>.</p>
+<figure>
+    <img src="https://aljrico.com/img/column.jpg"
+         alt="R columns are not slow"/> 
+</figure>
+
+<h2 id="r-loops-are-not-slow">R loops are not slow</h2>
+<p>Firstly, whw do we make R loops faster? Well, a widespread misconception
+about R programming is that loops are inherently slow. The actual loop
+is actually as fast as you can expect from a high-level language; and
+it’s easy to test that looping through something light as a vector is
+actually as fast as what you can achieve with the <code>apply()</code> family:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r"><span style="color:#a6e22e">library</span>(bench)
+<span style="color:#a6e22e">library</span>(plotly)
+<span style="color:#a6e22e">library</span>(dplyr)
+
+<span style="color:#75715e"># Function to quickly visualise the results of the performance analysis. We&#39;ll be using this function across this article</span>
+plot_results <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(results) {
+  results <span style="color:#f92672">%&gt;%</span>
+    <span style="color:#a6e22e">select</span>(expression, median, n) <span style="color:#f92672">%&gt;%</span>
+    <span style="color:#a6e22e">mutate</span>(expression <span style="color:#f92672">=</span> <span style="color:#a6e22e">as.character</span>(expression)) <span style="color:#f92672">%&gt;%</span>
+    <span style="color:#a6e22e">plot_ly</span>(colors <span style="color:#f92672">=</span> <span style="color:#a6e22e">c</span>(<span style="color:#e6db74">&#34;#1f2430&#34;</span>, <span style="color:#e6db74">&#34;#4CCFE6&#34;</span>, <span style="color:#e6db74">&#34;#FFCC66&#34;</span>, <span style="color:#e6db74">&#34;#F07171&#34;</span>, <span style="color:#e6db74">&#34;#FF9940&#34;</span>)) <span style="color:#f92672">%&gt;%</span>
+    <span style="color:#a6e22e">add_trace</span>(x <span style="color:#f92672">=</span> <span style="color:#f92672">~</span>n, y <span style="color:#f92672">=</span> <span style="color:#f92672">~</span>median, color <span style="color:#f92672">=</span> <span style="color:#f92672">~</span>expression, type <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;scatter&#34;</span>, mode <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;lines+markers&#34;</span>) <span style="color:#f92672">%&gt;%</span>
+    <span style="color:#a6e22e">layout</span>(
+      xaxis <span style="color:#f92672">=</span> <span style="color:#a6e22e">list</span>(type <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;log&#34;</span>, title <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Size&#34;</span>, gridcolor <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;#fafafa&#34;</span>),
+      yaxis <span style="color:#f92672">=</span> <span style="color:#a6e22e">list</span>(type <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;log&#34;</span>, title <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Time (seconds)&#34;</span>, gridcolor <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;#fafafa&#34;</span>),
+      font <span style="color:#f92672">=</span> <span style="color:#a6e22e">list</span>(size <span style="color:#f92672">=</span> <span style="color:#ae81ff">13</span>)
+    )
+}
+
+<span style="color:#75715e"># Iterating over a vector using a vanilla &#39;for&#39; loop</span>
+for_loop <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(n) {
+  v <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>n)
+  <span style="color:#a6e22e">for </span>(i in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>n) v[i] <span style="color:#f92672">&lt;-</span> i <span style="color:#f92672">*</span> i
+  <span style="color:#a6e22e">return</span>(v)
+}
+
+<span style="color:#75715e"># Same iteration using the &#39;apply&#39; function</span>
+apply_loop <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(n) {
+  v <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>n)
+  v <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sapply</span>(v, <span style="color:#a6e22e">function</span>(i) i <span style="color:#f92672">*</span> i)
+  <span style="color:#a6e22e">return</span>(v)
+}
+
+<span style="color:#75715e"># Meaure performance of both approaches</span>
+results <span style="color:#f92672">&lt;-</span> bench<span style="color:#f92672">::</span><span style="color:#a6e22e">press</span>(
+  n <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span><span style="color:#a6e22e">^</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">:</span><span style="color:#ae81ff">15</span>),
+  {
+    bench<span style="color:#f92672">::</span><span style="color:#a6e22e">mark</span>(
+      <span style="color:#a6e22e">for_loop</span>(n),
+      <span style="color:#a6e22e">apply_loop</span>(n)
+    )
+  }
+)
+
+<span style="color:#75715e"># See results</span>
+<span style="color:#a6e22e">plot_results</span>(results)
+</code></pre></div>
+    <img 
+    src="https://raw.githubusercontent.com/aljrico/blog/master/_posts/rmarkdown/efficient_looping/file_1.png" 
+     class="center" 
+     
+     />
+
+
+<h2 id="different-looping-methods">Different looping methods</h2>
+<p>So if the loop is not slow, why looping through columns is so
+infuriatingly slow? Because of the way we access those columns. Every
+time you accessing the column of a data.frame by <code>df[, j]</code> you are
+accessing the whole of your data.frame and only later selecting just
+that column. And that’s an efficiency issue that’s going to grow
+non-linearly with the size of your data.frame.</p>
+<p>The magic of using <code>data.table</code> is that you will be able to only access
+the actual piece of memory that contains only what you are looking for.
+And we do that using the <code>set()</code> function. To ilustrate how to use it, we are going to do a simple operation of columns, simply create a
+<code>column_3</code> that will be the result of multiplying <code>column_1</code> and
+<code>column_2</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r"><span style="color:#a6e22e">library</span>(data.table)
+
+<span style="color:#75715e"># Create dummy data.table</span>
+dt <span style="color:#f92672">&lt;-</span>
+  <span style="color:#a6e22e">data.table</span>(
+    column_1 <span style="color:#f92672">=</span> <span style="color:#a6e22e">sample</span>(<span style="color:#ae81ff">100</span><span style="color:#f92672">:</span><span style="color:#ae81ff">1000</span>, size <span style="color:#f92672">=</span> <span style="color:#ae81ff">500</span>, replace <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>),
+    column_2 <span style="color:#f92672">=</span> <span style="color:#a6e22e">sample</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">:</span><span style="color:#ae81ff">10</span>, size <span style="color:#f92672">=</span> <span style="color:#ae81ff">500</span>, replace <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>)
+  )
+
+<span style="color:#75715e"># Convert to data.frame</span>
+df <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">as.data.frame</span>(dt)
+
+<span style="color:#75715e"># Base R way</span>
+df<span style="color:#f92672">$</span>column_3 <span style="color:#f92672">&lt;-</span> df<span style="color:#f92672">$</span>column_2 <span style="color:#f92672">*</span> df<span style="color:#f92672">$</span>column_1
+
+<span style="color:#75715e"># dplyr way</span>
+df <span style="color:#f92672">&lt;-</span> df <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">mutate</span>(column_3 <span style="color:#f92672">=</span> column_2 <span style="color:#f92672">*</span> column_1)
+
+<span style="color:#75715e"># vanilla data.table way</span>
+dt[, column_3 <span style="color:#f92672">:=</span> column_2 <span style="color:#f92672">*</span> column_1]
+
+<span style="color:#75715e"># extra efficient data.table way</span>
+<span style="color:#a6e22e">set</span>(dt, j <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;column_3&#34;</span>, value <span style="color:#f92672">=</span> dt<span style="color:#f92672">$</span>column_2 <span style="color:#f92672">*</span> dt<span style="color:#f92672">$</span>column_1)
+</code></pre></div><p>You specify the column name you’re referring to by their name in a
+string, using the <code>j</code> parameter. And then you input the desired value in
+the <code>value</code> parameter. Note that the <code>set()</code> function can be more
+verbose and definitely less clear, but bear with me because what you lose in readibility you
+gain it on efficiency.</p>
+<p>Now let&rsquo;s imagine that you need to iterate that process. That would mean you want to create a <code>j</code> column that is the result of multiplying the columns <code>j-1</code> and <code>j-2</code>, where <code>j</code> can be a very big number.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r"><span style="color:#75715e"># Create dummy data.table</span>
+dt <span style="color:#f92672">&lt;-</span>
+  <span style="color:#a6e22e">data.table</span>(
+    column_1 <span style="color:#f92672">=</span> <span style="color:#a6e22e">sample</span>(<span style="color:#ae81ff">100</span><span style="color:#f92672">:</span><span style="color:#ae81ff">1000</span>, size <span style="color:#f92672">=</span> <span style="color:#ae81ff">500</span>, replace <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>),
+    column_2 <span style="color:#f92672">=</span> <span style="color:#a6e22e">sample</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">:</span><span style="color:#ae81ff">10</span>, size <span style="color:#f92672">=</span> <span style="color:#ae81ff">500</span>, replace <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>)
+  )
+
+<span style="color:#75715e"># Convert to data.frame</span>
+df <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">as.data.frame</span>(dt)
+
+<span style="color:#75715e"># Create new columns using simple base R technique</span>
+base_r_way <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(df, n) {
+  <span style="color:#a6e22e">for </span>(j in <span style="color:#ae81ff">3</span><span style="color:#f92672">:</span>n) {
+    new_column <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste0</span>(<span style="color:#e6db74">&#34;column_&#34;</span>, j)
+    old_column_1 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste0</span>(<span style="color:#e6db74">&#34;column_&#34;</span>, j <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>)
+    old_column_2 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste0</span>(<span style="color:#e6db74">&#34;column_&#34;</span>, j <span style="color:#f92672">-</span> <span style="color:#ae81ff">2</span>)
+    df[[new_column]] <span style="color:#f92672">&lt;-</span> df[[old_column_1]] <span style="color:#f92672">*</span> df[[old_column_2]]
+  }
+
+  <span style="color:#a6e22e">return</span>(df)
+}
+
+<span style="color:#75715e"># Create new columns using the usual &#39;dplyr&#39; approach</span>
+dplyr_way <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(df, n) {
+  <span style="color:#a6e22e">for </span>(j in <span style="color:#ae81ff">3</span><span style="color:#f92672">:</span>n) {
+    new_column <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste0</span>(<span style="color:#e6db74">&#34;column_&#34;</span>, j)
+    old_column_1 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste0</span>(<span style="color:#e6db74">&#34;column_&#34;</span>, j <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>)
+    old_column_2 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste0</span>(<span style="color:#e6db74">&#34;column_&#34;</span>, j <span style="color:#f92672">-</span> <span style="color:#ae81ff">2</span>)
+    df <span style="color:#f92672">&lt;-</span> df <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">mutate</span>(<span style="color:#f92672">!!</span>new_column <span style="color:#f92672">:=</span> <span style="color:#a6e22e">UQ</span>(rlang<span style="color:#f92672">::</span><span style="color:#a6e22e">sym</span>(old_column_1)) <span style="color:#f92672">*</span> <span style="color:#a6e22e">UQ</span>(rlang<span style="color:#f92672">::</span><span style="color:#a6e22e">sym</span>(old_column_2)))
+  }
+  <span style="color:#a6e22e">return</span>(df)
+}
+
+<span style="color:#75715e"># Create new columns by reference using `set()` and data.table</span>
+efficient_way <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(dt, n) {
+  dat <span style="color:#f92672">&lt;-</span> data.table<span style="color:#f92672">::</span><span style="color:#a6e22e">copy</span>(dt)
+  <span style="color:#a6e22e">for </span>(j in <span style="color:#ae81ff">3</span><span style="color:#f92672">:</span>n) {
+    new_column <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste0</span>(<span style="color:#e6db74">&#34;column_&#34;</span>, j)
+    old_column_1 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste0</span>(<span style="color:#e6db74">&#34;column_&#34;</span>, j <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>)
+    old_column_2 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste0</span>(<span style="color:#e6db74">&#34;column_&#34;</span>, j <span style="color:#f92672">-</span> <span style="color:#ae81ff">2</span>)
+    <span style="color:#a6e22e">set</span>(dat, j <span style="color:#f92672">=</span> new_column, value <span style="color:#f92672">=</span> dat[[old_column_1]] <span style="color:#f92672">*</span> dat[[old_column_2]])
+  }
+  <span style="color:#a6e22e">return</span>(<span style="color:#a6e22e">as.data.frame</span>(dat))
+}
+
+<span style="color:#75715e"># Evaluate performance</span>
+results <span style="color:#f92672">&lt;-</span> bench<span style="color:#f92672">::</span><span style="color:#a6e22e">press</span>(
+  n <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span><span style="color:#a6e22e">^</span>(<span style="color:#ae81ff">2</span><span style="color:#f92672">:</span><span style="color:#ae81ff">6</span>),
+  {
+    bench<span style="color:#f92672">::</span><span style="color:#a6e22e">mark</span>(
+      <span style="color:#a6e22e">base_r_way</span>(df, n),
+      <span style="color:#a6e22e">dplyr_way</span>(df, n),
+      <span style="color:#a6e22e">efficient_way</span>(dt, n)
+    )
+  }
+)
+
+<span style="color:#a6e22e">plot_results</span>(results)
+</code></pre></div><!-- raw HTML omitted -->
+<h2 id="preventive-column-memory-allocation">Preventive column memory allocation</h2>
+<p>It seems that using <code>data.table</code> is going to be substantially faster
+than using <code>dplyr</code>, but since apparently the time required to compute
+using <em>dplyr</em> is blowing up, we’ll only incrase the size of the
+experiment using the other two, so we can compare them:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r"><span style="color:#75715e"># This chunk will throw an error, because `efficient_way()` is referencing more columns than they exist</span>
+results <span style="color:#f92672">&lt;-</span> bench<span style="color:#f92672">::</span><span style="color:#a6e22e">press</span>(
+  n <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span> <span style="color:#a6e22e">^ </span>(<span style="color:#ae81ff">2</span> <span style="color:#f92672">:</span> <span style="color:#ae81ff">15</span>),
+  {
+    bench<span style="color:#f92672">::</span><span style="color:#a6e22e">mark</span>(
+      <span style="color:#a6e22e">base_r_way</span>(df, n),
+      <span style="color:#a6e22e">efficient_way</span>(dt, n)
+    )
+  }
+)
+</code></pre></div><p>But here’s the catch: If you run this piece of code, you’ll encounter
+this
+<code>Internal error: DT passed to assign has not been allocated enough column slots.</code>
+Which basically means that a <code>data.table</code> object has a predefined
+expected number of columns that can’t be expanded using <code>set()</code>, and
+will throw an error once we get above that number, which is 1024. How do
+we solve that? It’s actually as easy as assigning those extra columns
+beforehand:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">efficient_way <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(dt, n) {
+  dat <span style="color:#f92672">&lt;-</span> data.table<span style="color:#f92672">::</span><span style="color:#a6e22e">copy</span>(dt)
+  <span style="color:#75715e"># If we know we are going to reference a large number of columns, we should allocate memory for them</span>
+  <span style="color:#a6e22e">if</span>(n <span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">1024</span>) <span style="color:#a6e22e">alloc.col</span>(dat, <span style="color:#ae81ff">2</span>^16) 
+    <span style="color:#a6e22e">for </span>(j in <span style="color:#ae81ff">3</span><span style="color:#f92672">:</span>n) {
+      new_column <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste0</span>(<span style="color:#e6db74">&#34;column_&#34;</span>, j)
+      old_column_1 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste0</span>(<span style="color:#e6db74">&#34;column_&#34;</span>, j <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>)
+      old_column_2 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste0</span>(<span style="color:#e6db74">&#34;column_&#34;</span>, j <span style="color:#f92672">-</span> <span style="color:#ae81ff">2</span>)
+      <span style="color:#a6e22e">set</span>(dat, j <span style="color:#f92672">=</span> new_column, value <span style="color:#f92672">=</span> dat[[old_column_1]] <span style="color:#f92672">*</span> dat[[old_column_2]])
+    }
+  <span style="color:#a6e22e">return</span>(<span style="color:#a6e22e">as.data.frame</span>(dat))
+}
+</code></pre></div><p>And now we can run the experiment with a very big number of columns and
+check that, indeed, using the <code>set()</code> function in a <code>data.table</code> makes
+looping through columns blazingly fast.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">results <span style="color:#f92672">&lt;-</span> bench<span style="color:#f92672">::</span><span style="color:#a6e22e">press</span>(
+  n <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span> <span style="color:#a6e22e">^ </span>(<span style="color:#ae81ff">2</span> <span style="color:#f92672">:</span> <span style="color:#ae81ff">14</span>),
+  {
+    bench<span style="color:#f92672">::</span><span style="color:#a6e22e">mark</span>(
+      <span style="color:#a6e22e">base_r_way</span>(df, n),
+      <span style="color:#a6e22e">efficient_way</span>(dt, n)
+    )
+  }
+)
+
+<span style="color:#a6e22e">plot_results</span>(results)
+</code></pre></div><!-- raw HTML omitted -->
+
+
+            </div>
+        </article>
+
+        <hr />
+
+        <div class="post-info">
+                <p>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-tag meta-icon"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line></svg><span class="tag"><a href="https://aljrico.com/tags/untagged">untagged</a></span>
+                </p>
+
+            <p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>1176 Words</p>
+
+            <p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>2020-06-07 01:00 &#43;0100</p>
+        </div>
+
+        
+            <div class="pagination">
+                <div class="pagination__title">
+                    <span class="pagination__title-h"></span>
+                    <hr />
+                </div>
+
+                <div class="pagination__buttons">
+                    
+
+                    
+                        <span class="button next">
+                            <a href="https://aljrico.com/posts/2018/11/my-first-r-package-harrypotter/">
+                                <span class="button__text">My First R Package: harrypotter</span>
+                                <span class="button__icon">→</span>
+                            </a>
+                        </span>
+                    
+                </div>
+            </div>
+        
+    </main>
+
+            </div>
+
+            
+                <footer class="footer">
+    <div class="footer__inner">
+        <div class="footer__content">
+            <span>&copy; 2020</span>
+            
+                <span><a href="https://aljrico.com/">Alejandro Jiménez Rico</a></span>
+            
+            <span> <a href="https://aljrico.com/posts/index.xml" target="_blank" title="rss"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-rss"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg></a></span>
+        </div>
+    </div>
+    <div class="footer__inner">
+        <div class="footer__content">
+            <span>Made with way too much &#9749;</span>
+        </div>
+    </div>
+</footer>
+
+            
+        </div>
+
+        
+
+
+
+
+<script type="text/javascript" src="https://aljrico.com/bundle.min.dc716e9092c9820b77f96da294d0120aeeb189b5bcea9752309ebea27fd53bbe6b13cffb2aca8ecf32525647ceb7001f76091de4199ac5a3caa432c070247f5b.js" integrity="sha512-3HFukJLJggt3&#43;W2ilNASCu6xibW86pdSMJ6&#43;on/VO75rE8/7KsqOzzJSVkfOtwAfdgkd5BmaxaPKpDLAcCR/Ww=="></script>
+
+
+
+    </body>
+</html>

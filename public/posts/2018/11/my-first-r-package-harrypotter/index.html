@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="author" content="Alejandro Jiménez Rico ">
+<meta name="description" content="I want to present you my first R package, already published in CRAN.
+I have to say that has been a challenging but very exciting experience. I&amp;rsquo;ve learned a lot of stuff and now I can appreciate that the way packages are structured, and the existence of the CRAN is one of the highlights of R, and one of its strongest advantages over other languages.
+This package provides the first round of palettes derived from the Harry Potter film series." />
+<meta name="keywords" content=", r, package, library" />
+<meta name="robots" content="noodp" />
+<meta name="theme-color" content="#252627" />
+<link rel="canonical" href="https://aljrico.com/posts/2018/11/my-first-r-package-harrypotter/" />
+
+
+    <title>
+        
+            My First R Package: harrypotter :: Alejandro J Rico  — Hello Friend NG Theme
+        
+    </title>
+
+
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/3.2.1/css/flag-icon.min.css" rel="stylesheet"
+    type="text/css">
+
+
+
+<link rel="stylesheet" href="https://aljrico.com/main.435bbdd5eb7d91e6110f02e36297276498e5269f94d60e15cb192dbff8fec07f.css">
+
+
+
+
+    <link rel="apple-touch-icon" sizes="180x180" href="https://aljrico.com/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="https://aljrico.com/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="https://aljrico.com/favicon-16x16.png">
+    <link rel="manifest" href="https://aljrico.com/site.webmanifest">
+    <link rel="mask-icon" href="https://aljrico.com/safari-pinned-tab.svg" color="#252627">
+    <link rel="shortcut icon" href="https://aljrico.com/favicon.ico">
+    <meta name="msapplication-TileColor" content="#252627">
+    <meta name="theme-color" content="#252627">
+
+
+
+<meta itemprop="name" content="My First R Package: harrypotter">
+<meta itemprop="description" content="I want to present you my first R package, already published in CRAN.
+I have to say that has been a challenging but very exciting experience. I&rsquo;ve learned a lot of stuff and now I can appreciate that the way packages are structured, and the existence of the CRAN is one of the highlights of R, and one of its strongest advantages over other languages.
+This package provides the first round of palettes derived from the Harry Potter film series.">
+<meta itemprop="datePublished" content="2018-11-29T00:00:00&#43;00:00" />
+<meta itemprop="dateModified" content="2018-11-29T00:00:00&#43;00:00" />
+<meta itemprop="wordCount" content="534">
+<meta itemprop="image" content="https://aljrico.com/"/>
+
+
+
+<meta itemprop="keywords" content="r,package,library," />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://aljrico.com/"/>
+
+<meta name="twitter:title" content="My First R Package: harrypotter"/>
+<meta name="twitter:description" content="I want to present you my first R package, already published in CRAN.
+I have to say that has been a challenging but very exciting experience. I&rsquo;ve learned a lot of stuff and now I can appreciate that the way packages are structured, and the existence of the CRAN is one of the highlights of R, and one of its strongest advantages over other languages.
+This package provides the first round of palettes derived from the Harry Potter film series."/>
+
+
+
+    <meta property="og:title" content="My First R Package: harrypotter" />
+<meta property="og:description" content="I want to present you my first R package, already published in CRAN.
+I have to say that has been a challenging but very exciting experience. I&rsquo;ve learned a lot of stuff and now I can appreciate that the way packages are structured, and the existence of the CRAN is one of the highlights of R, and one of its strongest advantages over other languages.
+This package provides the first round of palettes derived from the Harry Potter film series." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://aljrico.com/posts/2018/11/my-first-r-package-harrypotter/" />
+<meta property="og:image" content="https://aljrico.com/"/>
+<meta property="article:published_time" content="2018-11-29T00:00:00+00:00" />
+<meta property="article:modified_time" content="2018-11-29T00:00:00+00:00" />
+
+
+
+
+
+
+    <meta property="article:published_time" content="2018-11-29 00:00:00 &#43;0000 UTC" />
+
+
+
+
+
+
+
+
+    </head>
+
+    <body class="">
+        <div class="container">
+            <header class="header">
+    <span class="header__inner">
+        <a href="https://aljrico.com/" style="text-decoration: none;">
+    <div class="logo">
+        
+            <span class="logo__mark">></span>
+            <span class="logo__text">$ cd /home/</span>
+            <span class="logo__cursor" style=
+                  "
+                   background-color:#FFCC66;
+                   animation-duration:1s;">
+            </span>
+        
+    </div>
+</a>
+
+
+        <span class="header__right">
+            
+                <nav class="menu">
+    <ul class="menu__inner"><li><a href="https://aljrico.com/about/">About</a></li><li><a href="https://aljrico.com/posts/">Posts</a></li><li><a href="https://aljrico.com/projects/">Projects</a></li>
+    </ul>
+</nav>
+
+                <span class="menu-trigger">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M0 0h24v24H0z" fill="none"/>
+                        <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+                    </svg>
+                </span>
+            
+
+            <span class="theme-toggle unselectable"><svg class="theme-toggler" width="24" height="24" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M22 41C32.4934 41 41 32.4934 41 22C41 11.5066 32.4934 3 22
+  3C11.5066 3 3 11.5066 3 22C3 32.4934 11.5066 41 22 41ZM7 22C7
+  13.7157 13.7157 7 22 7V37C13.7157 37 7 30.2843 7 22Z"/>
+</svg>
+</span>
+        </span>
+    </span>
+</header>
+
+
+            <div class="content">
+                
+    <main class="post">
+
+        <div class="post-info">
+            <p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-clock"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>3 minutes
+
+            
+
+            </p>
+        </div>
+
+        <article>
+            <h1 class="post-title">
+                <a href="https://aljrico.com/posts/2018/11/my-first-r-package-harrypotter/">My First R Package: harrypotter</a>
+            </h1>
+
+            
+
+            <div class="post-content">
+                
+    <img 
+    src="https://raw.githubusercontent.com/aljrico/harrypotter/master/man/figures/logo.png" 
+     class="center plain" 
+     
+     />
+
+
+<p><a href="https://cran.r-project.org/package=harrypotter"><img src="https://www.r-pkg.org/badges/version/harrypotter" alt="cran version"></a></p>
+<p>I want to present you my first <strong>R</strong> package, <a href="https://cran.r-project.org/package=harrypotter">already published</a> in CRAN.</p>
+<p>I have to say that has been a challenging but very exciting experience. I&rsquo;ve learned a lot of stuff and now I can appreciate that the way packages are structured, and the existence of the CRAN is one of the highlights of <code>R</code>, and one of its strongest advantages over other languages.</p>
+<p>This package provides the first round of palettes derived from the <em>Harry Potter</em> film series.</p>
+<p>At its first version, it simply contains the palettes of the <a href="https://en.wikipedia.org/wiki/Hogwarts">Hogwarts</a> Houses. They have been chosen manually, taking into account its consistency with all the existing branding of the franchise, but its suitability for data visualisation.</p>
+<p>The colour palette should be beautiful, useful for plotting data and shoulr relate to desired style; in this case, should relate to the Harry Potter world. Some of the colours might change in future versions, in order to find this balance between suitability for plotting and relatable to the Harry Potter universe.</p>
+<blockquote>
+<p>Most of us need to <em>listen</em> to the music to understand how beautiful it is. But often that’s how statistics are presented: we show the notes instead of playing the music.</p>
+</blockquote>
+<h2 id="installation">Installation</h2>
+<p>Just copy and execute this bunch of code and you&rsquo;ll have the last version of the package installed:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r"><span style="color:#a6e22e">install.packages</span>(<span style="color:#e6db74">&#34;harrypotter&#34;</span>)
+</code></pre></div><p>And you can now use it:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r"><span style="color:#a6e22e">library</span>(harrypotter)
+</code></pre></div><h2 id="usage">Usage</h2>
+<p>The default colour scale of the package is the one of the house <em>Hufflepuff</em>. If you prefer to choose another one, you&rsquo;ll need to specify which house you want the palette from.</p>
+<p>Let&rsquo;s say that you want a palette made from the house <strong>Gryffindor</strong>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">pal <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">hp</span>(<span style="color:#ae81ff">25</span>, house <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Gryffindor&#34;</span>)
+<span style="color:#a6e22e">image</span>(volcano, col <span style="color:#f92672">=</span> pal)
+</code></pre></div><figure class="center">
+    <img src="https://raw.githubusercontent.com/aljrico/blog/master/_posts/images/unnamed-chunk-3-1.png"/> 
+</figure>
+
+<p>Or if you prefer to be a <strong>Ravenclaw</strong>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">pal <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">hp</span>(<span style="color:#ae81ff">25</span>, house <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Ravenclaw&#34;</span>)
+<span style="color:#a6e22e">image</span>(volcano, col <span style="color:#f92672">=</span> pal)
+</code></pre></div><figure class="center">
+    <img src="https://raw.githubusercontent.com/aljrico/blog/master/_posts/images/unnamed-chunk-4-1.png"/> 
+</figure>
+
+<p>Or put them all together</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">pal_gryff <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">hp</span>(<span style="color:#ae81ff">25</span>, house <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Gryffindor&#34;</span>)
+pal_rav   <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">hp</span>(<span style="color:#ae81ff">25</span>, house <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Ravenclaw&#34;</span>)
+pal_huff  <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">hp</span>(<span style="color:#ae81ff">25</span>, house <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Hufflepuff&#34;</span>)
+pal_sly   <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">hp</span>(<span style="color:#ae81ff">25</span>, house <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Slytherin&#34;</span>)
+
+<span style="color:#a6e22e">par</span>(mfrow <span style="color:#f92672">=</span> <span style="color:#a6e22e">c</span>(<span style="color:#ae81ff">2</span>,<span style="color:#ae81ff">2</span>))
+<span style="color:#a6e22e">image</span>(volcano, col <span style="color:#f92672">=</span> pal_gryff)
+<span style="color:#a6e22e">image</span>(volcano, col <span style="color:#f92672">=</span> pal_rav)
+<span style="color:#a6e22e">image</span>(volcano, col <span style="color:#f92672">=</span> pal_huff)
+<span style="color:#a6e22e">image</span>(volcano, col <span style="color:#f92672">=</span> pal_sly)
+</code></pre></div><figure class="center">
+    <img src="https://raw.githubusercontent.com/aljrico/blog/master/_posts/images/unnamed-chunk-5-1.png"/> 
+</figure>
+
+<h3 id="ggplot2">ggplot2</h3>
+<p>Of course, this package has specific functions to behave seamlessly with the best data visiualisation library available. 
+The package contains colour scale functions for <strong>ggplot2</strong> plots: <code>scale_color_hp()</code> and <code>scale_fill_hp()</code>.</p>
+<p>Here is a made up example using the colours from the house of <strong>Hufflepuff</strong>,</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r"><span style="color:#a6e22e">library</span>(ggplot2)
+<span style="color:#a6e22e">ggplot</span>(<span style="color:#a6e22e">data.frame</span>(x <span style="color:#f92672">=</span> <span style="color:#a6e22e">rnorm</span>(<span style="color:#ae81ff">1e4</span>), y <span style="color:#f92672">=</span> <span style="color:#a6e22e">rnorm</span>(<span style="color:#ae81ff">1e4</span>)), <span style="color:#a6e22e">aes</span>(x <span style="color:#f92672">=</span> x, y <span style="color:#f92672">=</span> y)) <span style="color:#f92672">+</span>
+  <span style="color:#a6e22e">geom_hex</span>() <span style="color:#f92672">+</span> 
+	<span style="color:#a6e22e">coord_fixed</span>() <span style="color:#f92672">+</span>
+  <span style="color:#a6e22e">scale_fill_hp</span>(house <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;hufflepuff&#34;</span>) <span style="color:#f92672">+</span> 
+	<span style="color:#a6e22e">theme_bw</span>()
+</code></pre></div><figure class="center">
+    <img src="https://raw.githubusercontent.com/aljrico/blog/master/_posts/images/unnamed-chunk-6-1.png"/> 
+</figure>
+
+<p>or more made-up heatmaps</p>
+<figure class="center">
+    <img src="https://raw.githubusercontent.com/aljrico/blog/master/_posts/images/unnamed-chunk-8-1.png"/> 
+</figure>
+
+<p>Using the same function we can also plot these cloropleth maps of U.S. unemployment:</p>
+<figure class="center">
+    <img src="https://raw.githubusercontent.com/aljrico/blog/master/_posts/images/ggplot2-1.png"/> 
+</figure>
+
+<figure class="center">
+    <img src="https://raw.githubusercontent.com/aljrico/blog/master/_posts/images/ggplot2-2.png"/> 
+</figure>
+
+<p>But what if you want discrete scales? These functions also can be used for discrete scales with the argument <code>discrete = TRUE</code>. This argument, when TRUE, sets a finite number of sufficiently spaced colours within the selected palette to plot your data.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r"><span style="color:#a6e22e">library</span>(<span style="color:#e6db74">&#34;ggplot2&#34;</span>)
+<span style="color:#a6e22e">ggplot</span>(mtcars, <span style="color:#a6e22e">aes</span>(<span style="color:#a6e22e">factor</span>(cyl), fill<span style="color:#f92672">=</span><span style="color:#a6e22e">factor</span>(vs))) <span style="color:#f92672">+</span>  
+	<span style="color:#a6e22e">geom_bar</span>() <span style="color:#f92672">+</span>
+  <span style="color:#a6e22e">scale_fill_hp</span>(discrete <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>, house <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Ravenclaw&#34;</span>)
+</code></pre></div><figure class="center">
+    <img src="https://raw.githubusercontent.com/aljrico/blog/master/_posts/images/unnamed-chunk-9-1.png"/> 
+</figure>
+
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r"><span style="color:#a6e22e">ggplot</span>(mpg, <span style="color:#a6e22e">aes</span>(class)) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">geom_bar</span>(<span style="color:#a6e22e">aes</span>(fill <span style="color:#f92672">=</span> drv), position <span style="color:#f92672">=</span> <span style="color:#a6e22e">position_stack</span>(reverse <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>)) <span style="color:#f92672">+</span>
+ <span style="color:#a6e22e">coord_flip</span>() <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">scale_fill_hp</span>(discrete <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>, house <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Gryffindor&#34;</span>) <span style="color:#f92672">+</span>
+ <span style="color:#a6e22e">theme</span>(legend.position <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;top&#34;</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">ylab</span>(<span style="color:#e6db74">&#34;&#34;</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">xlab</span>(<span style="color:#e6db74">&#34;Class&#34;</span>)
+</code></pre></div><figure class="center">
+    <img src="https://raw.githubusercontent.com/aljrico/blog/master/_posts/images/unnamed-chunk-10-1.png"/> 
+</figure>
+
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">x <span style="color:#f92672">&lt;-</span> y <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">seq</span>(<span style="color:#ae81ff">-8</span><span style="color:#f92672">*</span><span style="color:#66d9ef">pi</span>, <span style="color:#ae81ff">8</span><span style="color:#f92672">*</span><span style="color:#66d9ef">pi</span>, len <span style="color:#f92672">=</span> <span style="color:#ae81ff">40</span>)
+r <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sqrt</span>(<span style="color:#a6e22e">outer</span>(x^2, y^2, <span style="color:#e6db74">&#34;+&#34;</span>))
+<span style="color:#a6e22e">filled.contour</span>(<span style="color:#a6e22e">cos</span>(r^2)<span style="color:#f92672">*</span><span style="color:#a6e22e">exp</span>(<span style="color:#f92672">-</span>r<span style="color:#f92672">/</span>(<span style="color:#ae81ff">2</span><span style="color:#f92672">*</span><span style="color:#66d9ef">pi</span>)), 
+               axes<span style="color:#f92672">=</span><span style="color:#66d9ef">FALSE</span>,
+               color.palette<span style="color:#f92672">=</span>hp,
+               asp<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+</code></pre></div><figure class="center">
+    <img src="https://raw.githubusercontent.com/aljrico/blog/master/_posts/images/unnamed-chunk-11-1.png"/> 
+</figure>
+
+
+
+            </div>
+        </article>
+
+        <hr />
+
+        <div class="post-info">
+                <p>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-tag meta-icon"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line></svg><span class="tag"><a href="https://aljrico.com/tags/r">r</a></span><span class="tag"><a href="https://aljrico.com/tags/package">package</a></span><span class="tag"><a href="https://aljrico.com/tags/library">library</a></span>
+                </p>
+
+            <p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>534 Words</p>
+
+            <p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>2018-11-29 00:00 &#43;0000</p>
+        </div>
+
+        
+            <div class="pagination">
+                <div class="pagination__title">
+                    <span class="pagination__title-h"></span>
+                    <hr />
+                </div>
+
+                <div class="pagination__buttons">
+                    
+                        <span class="button previous">
+                            <a href="https://aljrico.com/posts/2020/06/efficient-column-looping-with-r/">
+                                <span class="button__icon">←</span>
+                                <span class="button__text">Efficient Column Looping with R</span>
+                            </a>
+                        </span>
+                    
+
+                    
+                        <span class="button next">
+                            <a href="https://aljrico.com/posts/2018/09/genetic-algorithms-solving-the-n-queens-problem/">
+                                <span class="button__text">Genetic Algorithms: Solving the N-Queens problem</span>
+                                <span class="button__icon">→</span>
+                            </a>
+                        </span>
+                    
+                </div>
+            </div>
+        
+    </main>
+
+            </div>
+
+            
+                <footer class="footer">
+    <div class="footer__inner">
+        <div class="footer__content">
+            <span>&copy; 2020</span>
+            
+                <span><a href="https://aljrico.com/">Alejandro Jiménez Rico</a></span>
+            
+            <span> <a href="https://aljrico.com/posts/index.xml" target="_blank" title="rss"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-rss"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg></a></span>
+        </div>
+    </div>
+    <div class="footer__inner">
+        <div class="footer__content">
+            <span>Made with way too much &#9749;</span>
+        </div>
+    </div>
+</footer>
+
+            
+        </div>
+
+        
+
+
+
+
+<script type="text/javascript" src="https://aljrico.com/bundle.min.dc716e9092c9820b77f96da294d0120aeeb189b5bcea9752309ebea27fd53bbe6b13cffb2aca8ecf32525647ceb7001f76091de4199ac5a3caa432c070247f5b.js" integrity="sha512-3HFukJLJggt3&#43;W2ilNASCu6xibW86pdSMJ6&#43;on/VO75rE8/7KsqOzzJSVkfOtwAfdgkd5BmaxaPKpDLAcCR/Ww=="></script>
+
+
+
+    </body>
+</html>

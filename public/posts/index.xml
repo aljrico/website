@@ -1,0 +1,1577 @@
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+    <channel>
+        <title>Posts on Alejandro J Rico</title>
+        <link>https://aljrico.com/posts/</link>
+        <description>Recent content in Posts on Alejandro J Rico</description>
+        <generator>Hugo -- gohugo.io</generator>
+        <language>en-us</language>
+        <copyright>&lt;a href=&#34;https://creativecommons.org/licenses/by-nc/4.0/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;CC BY-NC 4.0&lt;/a&gt;</copyright>
+        <lastBuildDate>Sun, 07 Jun 2020 00:00:00 +0000</lastBuildDate>
+        <atom:link href="https://aljrico.com/posts/index.xml" rel="self" type="application/rss+xml" />
+        
+        <item>
+            <title>Efficient Column Looping with R</title>
+            <link>https://aljrico.com/posts/2020/06/efficient-column-looping-with-r/</link>
+            <pubDate>Sun, 07 Jun 2020 00:00:00 +0000</pubDate>
+            
+            <guid>https://aljrico.com/posts/2020/06/efficient-column-looping-with-r/</guid>
+            <description>I’d bet most R developers have - or will have - faced the issue of having to optimise a big piece of code. Some processes might take way too much time, or they are filling memory space until the session explodes and everything crashes.
+One of the most infamous caveats of programming with R is how slow it can be to loop through columns of a data.frame. It has been widely discussed and everyone knows that you shouldn’t use a for loop to iterate a function over many columns, you should use the apply() family for that.</description>
+            <content type="html"><![CDATA[<p>I’d bet most R developers have - or will have - faced the issue of
+having to optimise a big piece of code. Some processes might take way
+too much time, or they are filling memory space until the session
+explodes and everything crashes.</p>
+<p>One of the most infamous caveats of programming with R is how slow it
+can be to loop through columns of a data.frame. It has been widely
+discussed and everyone knows that you shouldn’t use a <code>for</code> loop to
+iterate a function over many columns, you should use the <code>apply()</code>
+family for that. But we also know that sometimes you just can’t avoid
+using classic loops, for example when your calculation depends on
+previous iterations.</p>
+<p>So here I want to introduce you to a very simple way to dynamically
+create columns blazingly fast in a loop. We are going to make use of
+<code>data.table</code>, as it’s usual when we want to optimise R code, and its
+fantastic <a href="https://cran.r-project.org/web/packages/data.table/vignettes/datatable-reference-semantics.html">modification by
+reference</a>.</p>
+<figure>
+    <img src="/img/column.jpg"
+         alt="R columns are not slow"/> 
+</figure>
+
+<h2 id="r-loops-are-not-slow">R loops are not slow</h2>
+<p>Firstly, whw do we make R loops faster? Well, a widespread misconception
+about R programming is that loops are inherently slow. The actual loop
+is actually as fast as you can expect from a high-level language; and
+it’s easy to test that looping through something light as a vector is
+actually as fast as what you can achieve with the <code>apply()</code> family:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r"><span style="color:#a6e22e">library</span>(bench)
+<span style="color:#a6e22e">library</span>(plotly)
+<span style="color:#a6e22e">library</span>(dplyr)
+
+<span style="color:#75715e"># Function to quickly visualise the results of the performance analysis. We&#39;ll be using this function across this article</span>
+plot_results <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(results) {
+  results <span style="color:#f92672">%&gt;%</span>
+    <span style="color:#a6e22e">select</span>(expression, median, n) <span style="color:#f92672">%&gt;%</span>
+    <span style="color:#a6e22e">mutate</span>(expression <span style="color:#f92672">=</span> <span style="color:#a6e22e">as.character</span>(expression)) <span style="color:#f92672">%&gt;%</span>
+    <span style="color:#a6e22e">plot_ly</span>(colors <span style="color:#f92672">=</span> <span style="color:#a6e22e">c</span>(<span style="color:#e6db74">&#34;#1f2430&#34;</span>, <span style="color:#e6db74">&#34;#4CCFE6&#34;</span>, <span style="color:#e6db74">&#34;#FFCC66&#34;</span>, <span style="color:#e6db74">&#34;#F07171&#34;</span>, <span style="color:#e6db74">&#34;#FF9940&#34;</span>)) <span style="color:#f92672">%&gt;%</span>
+    <span style="color:#a6e22e">add_trace</span>(x <span style="color:#f92672">=</span> <span style="color:#f92672">~</span>n, y <span style="color:#f92672">=</span> <span style="color:#f92672">~</span>median, color <span style="color:#f92672">=</span> <span style="color:#f92672">~</span>expression, type <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;scatter&#34;</span>, mode <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;lines+markers&#34;</span>) <span style="color:#f92672">%&gt;%</span>
+    <span style="color:#a6e22e">layout</span>(
+      xaxis <span style="color:#f92672">=</span> <span style="color:#a6e22e">list</span>(type <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;log&#34;</span>, title <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Size&#34;</span>, gridcolor <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;#fafafa&#34;</span>),
+      yaxis <span style="color:#f92672">=</span> <span style="color:#a6e22e">list</span>(type <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;log&#34;</span>, title <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Time (seconds)&#34;</span>, gridcolor <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;#fafafa&#34;</span>),
+      font <span style="color:#f92672">=</span> <span style="color:#a6e22e">list</span>(size <span style="color:#f92672">=</span> <span style="color:#ae81ff">13</span>)
+    )
+}
+
+<span style="color:#75715e"># Iterating over a vector using a vanilla &#39;for&#39; loop</span>
+for_loop <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(n) {
+  v <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>n)
+  <span style="color:#a6e22e">for </span>(i in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>n) v[i] <span style="color:#f92672">&lt;-</span> i <span style="color:#f92672">*</span> i
+  <span style="color:#a6e22e">return</span>(v)
+}
+
+<span style="color:#75715e"># Same iteration using the &#39;apply&#39; function</span>
+apply_loop <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(n) {
+  v <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>n)
+  v <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sapply</span>(v, <span style="color:#a6e22e">function</span>(i) i <span style="color:#f92672">*</span> i)
+  <span style="color:#a6e22e">return</span>(v)
+}
+
+<span style="color:#75715e"># Meaure performance of both approaches</span>
+results <span style="color:#f92672">&lt;-</span> bench<span style="color:#f92672">::</span><span style="color:#a6e22e">press</span>(
+  n <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span><span style="color:#a6e22e">^</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">:</span><span style="color:#ae81ff">15</span>),
+  {
+    bench<span style="color:#f92672">::</span><span style="color:#a6e22e">mark</span>(
+      <span style="color:#a6e22e">for_loop</span>(n),
+      <span style="color:#a6e22e">apply_loop</span>(n)
+    )
+  }
+)
+
+<span style="color:#75715e"># See results</span>
+<span style="color:#a6e22e">plot_results</span>(results)
+</code></pre></div>
+    <img 
+    src="https://raw.githubusercontent.com/aljrico/blog/master/_posts/rmarkdown/efficient_looping/file_1.png" 
+     class="center" 
+     
+     />
+
+
+<h2 id="different-looping-methods">Different looping methods</h2>
+<p>So if the loop is not slow, why looping through columns is so
+infuriatingly slow? Because of the way we access those columns. Every
+time you accessing the column of a data.frame by <code>df[, j]</code> you are
+accessing the whole of your data.frame and only later selecting just
+that column. And that’s an efficiency issue that’s going to grow
+non-linearly with the size of your data.frame.</p>
+<p>The magic of using <code>data.table</code> is that you will be able to only access
+the actual piece of memory that contains only what you are looking for.
+And we do that using the <code>set()</code> function. To ilustrate how to use it, we are going to do a simple operation of columns, simply create a
+<code>column_3</code> that will be the result of multiplying <code>column_1</code> and
+<code>column_2</code>:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r"><span style="color:#a6e22e">library</span>(data.table)
+
+<span style="color:#75715e"># Create dummy data.table</span>
+dt <span style="color:#f92672">&lt;-</span>
+  <span style="color:#a6e22e">data.table</span>(
+    column_1 <span style="color:#f92672">=</span> <span style="color:#a6e22e">sample</span>(<span style="color:#ae81ff">100</span><span style="color:#f92672">:</span><span style="color:#ae81ff">1000</span>, size <span style="color:#f92672">=</span> <span style="color:#ae81ff">500</span>, replace <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>),
+    column_2 <span style="color:#f92672">=</span> <span style="color:#a6e22e">sample</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">:</span><span style="color:#ae81ff">10</span>, size <span style="color:#f92672">=</span> <span style="color:#ae81ff">500</span>, replace <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>)
+  )
+
+<span style="color:#75715e"># Convert to data.frame</span>
+df <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">as.data.frame</span>(dt)
+
+<span style="color:#75715e"># Base R way</span>
+df<span style="color:#f92672">$</span>column_3 <span style="color:#f92672">&lt;-</span> df<span style="color:#f92672">$</span>column_2 <span style="color:#f92672">*</span> df<span style="color:#f92672">$</span>column_1
+
+<span style="color:#75715e"># dplyr way</span>
+df <span style="color:#f92672">&lt;-</span> df <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">mutate</span>(column_3 <span style="color:#f92672">=</span> column_2 <span style="color:#f92672">*</span> column_1)
+
+<span style="color:#75715e"># vanilla data.table way</span>
+dt[, column_3 <span style="color:#f92672">:=</span> column_2 <span style="color:#f92672">*</span> column_1]
+
+<span style="color:#75715e"># extra efficient data.table way</span>
+<span style="color:#a6e22e">set</span>(dt, j <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;column_3&#34;</span>, value <span style="color:#f92672">=</span> dt<span style="color:#f92672">$</span>column_2 <span style="color:#f92672">*</span> dt<span style="color:#f92672">$</span>column_1)
+</code></pre></div><p>You specify the column name you’re referring to by their name in a
+string, using the <code>j</code> parameter. And then you input the desired value in
+the <code>value</code> parameter. Note that the <code>set()</code> function can be more
+verbose and definitely less clear, but bear with me because what you lose in readibility you
+gain it on efficiency.</p>
+<p>Now let&rsquo;s imagine that you need to iterate that process. That would mean you want to create a <code>j</code> column that is the result of multiplying the columns <code>j-1</code> and <code>j-2</code>, where <code>j</code> can be a very big number.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r"><span style="color:#75715e"># Create dummy data.table</span>
+dt <span style="color:#f92672">&lt;-</span>
+  <span style="color:#a6e22e">data.table</span>(
+    column_1 <span style="color:#f92672">=</span> <span style="color:#a6e22e">sample</span>(<span style="color:#ae81ff">100</span><span style="color:#f92672">:</span><span style="color:#ae81ff">1000</span>, size <span style="color:#f92672">=</span> <span style="color:#ae81ff">500</span>, replace <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>),
+    column_2 <span style="color:#f92672">=</span> <span style="color:#a6e22e">sample</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">:</span><span style="color:#ae81ff">10</span>, size <span style="color:#f92672">=</span> <span style="color:#ae81ff">500</span>, replace <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>)
+  )
+
+<span style="color:#75715e"># Convert to data.frame</span>
+df <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">as.data.frame</span>(dt)
+
+<span style="color:#75715e"># Create new columns using simple base R technique</span>
+base_r_way <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(df, n) {
+  <span style="color:#a6e22e">for </span>(j in <span style="color:#ae81ff">3</span><span style="color:#f92672">:</span>n) {
+    new_column <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste0</span>(<span style="color:#e6db74">&#34;column_&#34;</span>, j)
+    old_column_1 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste0</span>(<span style="color:#e6db74">&#34;column_&#34;</span>, j <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>)
+    old_column_2 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste0</span>(<span style="color:#e6db74">&#34;column_&#34;</span>, j <span style="color:#f92672">-</span> <span style="color:#ae81ff">2</span>)
+    df[[new_column]] <span style="color:#f92672">&lt;-</span> df[[old_column_1]] <span style="color:#f92672">*</span> df[[old_column_2]]
+  }
+
+  <span style="color:#a6e22e">return</span>(df)
+}
+
+<span style="color:#75715e"># Create new columns using the usual &#39;dplyr&#39; approach</span>
+dplyr_way <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(df, n) {
+  <span style="color:#a6e22e">for </span>(j in <span style="color:#ae81ff">3</span><span style="color:#f92672">:</span>n) {
+    new_column <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste0</span>(<span style="color:#e6db74">&#34;column_&#34;</span>, j)
+    old_column_1 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste0</span>(<span style="color:#e6db74">&#34;column_&#34;</span>, j <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>)
+    old_column_2 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste0</span>(<span style="color:#e6db74">&#34;column_&#34;</span>, j <span style="color:#f92672">-</span> <span style="color:#ae81ff">2</span>)
+    df <span style="color:#f92672">&lt;-</span> df <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">mutate</span>(<span style="color:#f92672">!!</span>new_column <span style="color:#f92672">:=</span> <span style="color:#a6e22e">UQ</span>(rlang<span style="color:#f92672">::</span><span style="color:#a6e22e">sym</span>(old_column_1)) <span style="color:#f92672">*</span> <span style="color:#a6e22e">UQ</span>(rlang<span style="color:#f92672">::</span><span style="color:#a6e22e">sym</span>(old_column_2)))
+  }
+  <span style="color:#a6e22e">return</span>(df)
+}
+
+<span style="color:#75715e"># Create new columns by reference using `set()` and data.table</span>
+efficient_way <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(dt, n) {
+  dat <span style="color:#f92672">&lt;-</span> data.table<span style="color:#f92672">::</span><span style="color:#a6e22e">copy</span>(dt)
+  <span style="color:#a6e22e">for </span>(j in <span style="color:#ae81ff">3</span><span style="color:#f92672">:</span>n) {
+    new_column <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste0</span>(<span style="color:#e6db74">&#34;column_&#34;</span>, j)
+    old_column_1 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste0</span>(<span style="color:#e6db74">&#34;column_&#34;</span>, j <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>)
+    old_column_2 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste0</span>(<span style="color:#e6db74">&#34;column_&#34;</span>, j <span style="color:#f92672">-</span> <span style="color:#ae81ff">2</span>)
+    <span style="color:#a6e22e">set</span>(dat, j <span style="color:#f92672">=</span> new_column, value <span style="color:#f92672">=</span> dat[[old_column_1]] <span style="color:#f92672">*</span> dat[[old_column_2]])
+  }
+  <span style="color:#a6e22e">return</span>(<span style="color:#a6e22e">as.data.frame</span>(dat))
+}
+
+<span style="color:#75715e"># Evaluate performance</span>
+results <span style="color:#f92672">&lt;-</span> bench<span style="color:#f92672">::</span><span style="color:#a6e22e">press</span>(
+  n <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span><span style="color:#a6e22e">^</span>(<span style="color:#ae81ff">2</span><span style="color:#f92672">:</span><span style="color:#ae81ff">6</span>),
+  {
+    bench<span style="color:#f92672">::</span><span style="color:#a6e22e">mark</span>(
+      <span style="color:#a6e22e">base_r_way</span>(df, n),
+      <span style="color:#a6e22e">dplyr_way</span>(df, n),
+      <span style="color:#a6e22e">efficient_way</span>(dt, n)
+    )
+  }
+)
+
+<span style="color:#a6e22e">plot_results</span>(results)
+</code></pre></div><!-- raw HTML omitted -->
+<h2 id="preventive-column-memory-allocation">Preventive column memory allocation</h2>
+<p>It seems that using <code>data.table</code> is going to be substantially faster
+than using <code>dplyr</code>, but since apparently the time required to compute
+using <em>dplyr</em> is blowing up, we’ll only incrase the size of the
+experiment using the other two, so we can compare them:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r"><span style="color:#75715e"># This chunk will throw an error, because `efficient_way()` is referencing more columns than they exist</span>
+results <span style="color:#f92672">&lt;-</span> bench<span style="color:#f92672">::</span><span style="color:#a6e22e">press</span>(
+  n <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span> <span style="color:#a6e22e">^ </span>(<span style="color:#ae81ff">2</span> <span style="color:#f92672">:</span> <span style="color:#ae81ff">15</span>),
+  {
+    bench<span style="color:#f92672">::</span><span style="color:#a6e22e">mark</span>(
+      <span style="color:#a6e22e">base_r_way</span>(df, n),
+      <span style="color:#a6e22e">efficient_way</span>(dt, n)
+    )
+  }
+)
+</code></pre></div><p>But here’s the catch: If you run this piece of code, you’ll encounter
+this
+<code>Internal error: DT passed to assign has not been allocated enough column slots.</code>
+Which basically means that a <code>data.table</code> object has a predefined
+expected number of columns that can’t be expanded using <code>set()</code>, and
+will throw an error once we get above that number, which is 1024. How do
+we solve that? It’s actually as easy as assigning those extra columns
+beforehand:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">efficient_way <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(dt, n) {
+  dat <span style="color:#f92672">&lt;-</span> data.table<span style="color:#f92672">::</span><span style="color:#a6e22e">copy</span>(dt)
+  <span style="color:#75715e"># If we know we are going to reference a large number of columns, we should allocate memory for them</span>
+  <span style="color:#a6e22e">if</span>(n <span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">1024</span>) <span style="color:#a6e22e">alloc.col</span>(dat, <span style="color:#ae81ff">2</span>^16) 
+    <span style="color:#a6e22e">for </span>(j in <span style="color:#ae81ff">3</span><span style="color:#f92672">:</span>n) {
+      new_column <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste0</span>(<span style="color:#e6db74">&#34;column_&#34;</span>, j)
+      old_column_1 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste0</span>(<span style="color:#e6db74">&#34;column_&#34;</span>, j <span style="color:#f92672">-</span> <span style="color:#ae81ff">1</span>)
+      old_column_2 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste0</span>(<span style="color:#e6db74">&#34;column_&#34;</span>, j <span style="color:#f92672">-</span> <span style="color:#ae81ff">2</span>)
+      <span style="color:#a6e22e">set</span>(dat, j <span style="color:#f92672">=</span> new_column, value <span style="color:#f92672">=</span> dat[[old_column_1]] <span style="color:#f92672">*</span> dat[[old_column_2]])
+    }
+  <span style="color:#a6e22e">return</span>(<span style="color:#a6e22e">as.data.frame</span>(dat))
+}
+</code></pre></div><p>And now we can run the experiment with a very big number of columns and
+check that, indeed, using the <code>set()</code> function in a <code>data.table</code> makes
+looping through columns blazingly fast.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">results <span style="color:#f92672">&lt;-</span> bench<span style="color:#f92672">::</span><span style="color:#a6e22e">press</span>(
+  n <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span> <span style="color:#a6e22e">^ </span>(<span style="color:#ae81ff">2</span> <span style="color:#f92672">:</span> <span style="color:#ae81ff">14</span>),
+  {
+    bench<span style="color:#f92672">::</span><span style="color:#a6e22e">mark</span>(
+      <span style="color:#a6e22e">base_r_way</span>(df, n),
+      <span style="color:#a6e22e">efficient_way</span>(dt, n)
+    )
+  }
+)
+
+<span style="color:#a6e22e">plot_results</span>(results)
+</code></pre></div><!-- raw HTML omitted -->
+]]></content>
+        </item>
+        
+        <item>
+            <title>My First R Package: harrypotter</title>
+            <link>https://aljrico.com/posts/2018/11/my-first-r-package-harrypotter/</link>
+            <pubDate>Thu, 29 Nov 2018 00:00:00 +0000</pubDate>
+            
+            <guid>https://aljrico.com/posts/2018/11/my-first-r-package-harrypotter/</guid>
+            <description>I want to present you my first R package, already published in CRAN.
+I have to say that has been a challenging but very exciting experience. I&amp;rsquo;ve learned a lot of stuff and now I can appreciate that the way packages are structured, and the existence of the CRAN is one of the highlights of R, and one of its strongest advantages over other languages.
+This package provides the first round of palettes derived from the Harry Potter film series.</description>
+            <content type="html"><![CDATA[
+    <img 
+    src="https://raw.githubusercontent.com/aljrico/harrypotter/master/man/figures/logo.png" 
+     class="center plain" 
+     
+     />
+
+
+<p><a href="https://cran.r-project.org/package=harrypotter"><img src="https://www.r-pkg.org/badges/version/harrypotter" alt="cran version"></a></p>
+<p>I want to present you my first <strong>R</strong> package, <a href="https://cran.r-project.org/package=harrypotter">already published</a> in CRAN.</p>
+<p>I have to say that has been a challenging but very exciting experience. I&rsquo;ve learned a lot of stuff and now I can appreciate that the way packages are structured, and the existence of the CRAN is one of the highlights of <code>R</code>, and one of its strongest advantages over other languages.</p>
+<p>This package provides the first round of palettes derived from the <em>Harry Potter</em> film series.</p>
+<p>At its first version, it simply contains the palettes of the <a href="https://en.wikipedia.org/wiki/Hogwarts">Hogwarts</a> Houses. They have been chosen manually, taking into account its consistency with all the existing branding of the franchise, but its suitability for data visualisation.</p>
+<p>The colour palette should be beautiful, useful for plotting data and shoulr relate to desired style; in this case, should relate to the Harry Potter world. Some of the colours might change in future versions, in order to find this balance between suitability for plotting and relatable to the Harry Potter universe.</p>
+<blockquote>
+<p>Most of us need to <em>listen</em> to the music to understand how beautiful it is. But often that’s how statistics are presented: we show the notes instead of playing the music.</p>
+</blockquote>
+<h2 id="installation">Installation</h2>
+<p>Just copy and execute this bunch of code and you&rsquo;ll have the last version of the package installed:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r"><span style="color:#a6e22e">install.packages</span>(<span style="color:#e6db74">&#34;harrypotter&#34;</span>)
+</code></pre></div><p>And you can now use it:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r"><span style="color:#a6e22e">library</span>(harrypotter)
+</code></pre></div><h2 id="usage">Usage</h2>
+<p>The default colour scale of the package is the one of the house <em>Hufflepuff</em>. If you prefer to choose another one, you&rsquo;ll need to specify which house you want the palette from.</p>
+<p>Let&rsquo;s say that you want a palette made from the house <strong>Gryffindor</strong>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">pal <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">hp</span>(<span style="color:#ae81ff">25</span>, house <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Gryffindor&#34;</span>)
+<span style="color:#a6e22e">image</span>(volcano, col <span style="color:#f92672">=</span> pal)
+</code></pre></div><figure class="center">
+    <img src="https://raw.githubusercontent.com/aljrico/blog/master/_posts/images/unnamed-chunk-3-1.png"/> 
+</figure>
+
+<p>Or if you prefer to be a <strong>Ravenclaw</strong>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">pal <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">hp</span>(<span style="color:#ae81ff">25</span>, house <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Ravenclaw&#34;</span>)
+<span style="color:#a6e22e">image</span>(volcano, col <span style="color:#f92672">=</span> pal)
+</code></pre></div><figure class="center">
+    <img src="https://raw.githubusercontent.com/aljrico/blog/master/_posts/images/unnamed-chunk-4-1.png"/> 
+</figure>
+
+<p>Or put them all together</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">pal_gryff <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">hp</span>(<span style="color:#ae81ff">25</span>, house <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Gryffindor&#34;</span>)
+pal_rav   <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">hp</span>(<span style="color:#ae81ff">25</span>, house <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Ravenclaw&#34;</span>)
+pal_huff  <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">hp</span>(<span style="color:#ae81ff">25</span>, house <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Hufflepuff&#34;</span>)
+pal_sly   <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">hp</span>(<span style="color:#ae81ff">25</span>, house <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Slytherin&#34;</span>)
+
+<span style="color:#a6e22e">par</span>(mfrow <span style="color:#f92672">=</span> <span style="color:#a6e22e">c</span>(<span style="color:#ae81ff">2</span>,<span style="color:#ae81ff">2</span>))
+<span style="color:#a6e22e">image</span>(volcano, col <span style="color:#f92672">=</span> pal_gryff)
+<span style="color:#a6e22e">image</span>(volcano, col <span style="color:#f92672">=</span> pal_rav)
+<span style="color:#a6e22e">image</span>(volcano, col <span style="color:#f92672">=</span> pal_huff)
+<span style="color:#a6e22e">image</span>(volcano, col <span style="color:#f92672">=</span> pal_sly)
+</code></pre></div><figure class="center">
+    <img src="https://raw.githubusercontent.com/aljrico/blog/master/_posts/images/unnamed-chunk-5-1.png"/> 
+</figure>
+
+<h3 id="ggplot2">ggplot2</h3>
+<p>Of course, this package has specific functions to behave seamlessly with the best data visiualisation library available. 
+The package contains colour scale functions for <strong>ggplot2</strong> plots: <code>scale_color_hp()</code> and <code>scale_fill_hp()</code>.</p>
+<p>Here is a made up example using the colours from the house of <strong>Hufflepuff</strong>,</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r"><span style="color:#a6e22e">library</span>(ggplot2)
+<span style="color:#a6e22e">ggplot</span>(<span style="color:#a6e22e">data.frame</span>(x <span style="color:#f92672">=</span> <span style="color:#a6e22e">rnorm</span>(<span style="color:#ae81ff">1e4</span>), y <span style="color:#f92672">=</span> <span style="color:#a6e22e">rnorm</span>(<span style="color:#ae81ff">1e4</span>)), <span style="color:#a6e22e">aes</span>(x <span style="color:#f92672">=</span> x, y <span style="color:#f92672">=</span> y)) <span style="color:#f92672">+</span>
+  <span style="color:#a6e22e">geom_hex</span>() <span style="color:#f92672">+</span> 
+	<span style="color:#a6e22e">coord_fixed</span>() <span style="color:#f92672">+</span>
+  <span style="color:#a6e22e">scale_fill_hp</span>(house <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;hufflepuff&#34;</span>) <span style="color:#f92672">+</span> 
+	<span style="color:#a6e22e">theme_bw</span>()
+</code></pre></div><figure class="center">
+    <img src="https://raw.githubusercontent.com/aljrico/blog/master/_posts/images/unnamed-chunk-6-1.png"/> 
+</figure>
+
+<p>or more made-up heatmaps</p>
+<figure class="center">
+    <img src="https://raw.githubusercontent.com/aljrico/blog/master/_posts/images/unnamed-chunk-8-1.png"/> 
+</figure>
+
+<p>Using the same function we can also plot these cloropleth maps of U.S. unemployment:</p>
+<figure class="center">
+    <img src="https://raw.githubusercontent.com/aljrico/blog/master/_posts/images/ggplot2-1.png"/> 
+</figure>
+
+<figure class="center">
+    <img src="https://raw.githubusercontent.com/aljrico/blog/master/_posts/images/ggplot2-2.png"/> 
+</figure>
+
+<p>But what if you want discrete scales? These functions also can be used for discrete scales with the argument <code>discrete = TRUE</code>. This argument, when TRUE, sets a finite number of sufficiently spaced colours within the selected palette to plot your data.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r"><span style="color:#a6e22e">library</span>(<span style="color:#e6db74">&#34;ggplot2&#34;</span>)
+<span style="color:#a6e22e">ggplot</span>(mtcars, <span style="color:#a6e22e">aes</span>(<span style="color:#a6e22e">factor</span>(cyl), fill<span style="color:#f92672">=</span><span style="color:#a6e22e">factor</span>(vs))) <span style="color:#f92672">+</span>  
+	<span style="color:#a6e22e">geom_bar</span>() <span style="color:#f92672">+</span>
+  <span style="color:#a6e22e">scale_fill_hp</span>(discrete <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>, house <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Ravenclaw&#34;</span>)
+</code></pre></div><figure class="center">
+    <img src="https://raw.githubusercontent.com/aljrico/blog/master/_posts/images/unnamed-chunk-9-1.png"/> 
+</figure>
+
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r"><span style="color:#a6e22e">ggplot</span>(mpg, <span style="color:#a6e22e">aes</span>(class)) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">geom_bar</span>(<span style="color:#a6e22e">aes</span>(fill <span style="color:#f92672">=</span> drv), position <span style="color:#f92672">=</span> <span style="color:#a6e22e">position_stack</span>(reverse <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>)) <span style="color:#f92672">+</span>
+ <span style="color:#a6e22e">coord_flip</span>() <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">scale_fill_hp</span>(discrete <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>, house <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Gryffindor&#34;</span>) <span style="color:#f92672">+</span>
+ <span style="color:#a6e22e">theme</span>(legend.position <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;top&#34;</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">ylab</span>(<span style="color:#e6db74">&#34;&#34;</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">xlab</span>(<span style="color:#e6db74">&#34;Class&#34;</span>)
+</code></pre></div><figure class="center">
+    <img src="https://raw.githubusercontent.com/aljrico/blog/master/_posts/images/unnamed-chunk-10-1.png"/> 
+</figure>
+
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">x <span style="color:#f92672">&lt;-</span> y <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">seq</span>(<span style="color:#ae81ff">-8</span><span style="color:#f92672">*</span><span style="color:#66d9ef">pi</span>, <span style="color:#ae81ff">8</span><span style="color:#f92672">*</span><span style="color:#66d9ef">pi</span>, len <span style="color:#f92672">=</span> <span style="color:#ae81ff">40</span>)
+r <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sqrt</span>(<span style="color:#a6e22e">outer</span>(x^2, y^2, <span style="color:#e6db74">&#34;+&#34;</span>))
+<span style="color:#a6e22e">filled.contour</span>(<span style="color:#a6e22e">cos</span>(r^2)<span style="color:#f92672">*</span><span style="color:#a6e22e">exp</span>(<span style="color:#f92672">-</span>r<span style="color:#f92672">/</span>(<span style="color:#ae81ff">2</span><span style="color:#f92672">*</span><span style="color:#66d9ef">pi</span>)), 
+               axes<span style="color:#f92672">=</span><span style="color:#66d9ef">FALSE</span>,
+               color.palette<span style="color:#f92672">=</span>hp,
+               asp<span style="color:#f92672">=</span><span style="color:#ae81ff">1</span>)
+</code></pre></div><figure class="center">
+    <img src="https://raw.githubusercontent.com/aljrico/blog/master/_posts/images/unnamed-chunk-11-1.png"/> 
+</figure>
+
+]]></content>
+        </item>
+        
+        <item>
+            <title>Genetic Algorithms: Solving the N-Queens problem</title>
+            <link>https://aljrico.com/posts/2018/09/genetic-algorithms-solving-the-n-queens-problem/</link>
+            <pubDate>Thu, 06 Sep 2018 00:00:00 +0000</pubDate>
+            
+            <guid>https://aljrico.com/posts/2018/09/genetic-algorithms-solving-the-n-queens-problem/</guid>
+            <description>Purpose Throughout this article, I aim to provide with a very simple replicable and practical manual on how to use Genetic Algorithms on optimisation problems. During this, I&amp;rsquo;ll try to outline the philosophy of applying Genetic Algorithms (GA) and the implications of the many decisions involved in building such algorithms. With this goal in mind, we are going to solve the generalised 8-queens problem using three slightly different customized GA algorithms and comparing its advantages and weaknesses; this way getting a glimpse of the crucial points of building a proper GA model.</description>
+            <content type="html"><![CDATA[
+    <img 
+    src="/img/white-fungi.jpg" 
+     class="center" 
+     
+     />
+
+
+<h2 id="purpose">Purpose</h2>
+<p>Throughout this article, I aim to provide with a very simple replicable and practical manual on how to use Genetic Algorithms on optimisation problems. During this, I&rsquo;ll try to outline the philosophy of applying Genetic Algorithms (GA) and the implications of the many decisions involved in building such algorithms. With this goal in mind, we are going to solve the generalised <strong>8-queens</strong> problem using three slightly different customized GA algorithms and comparing its advantages and weaknesses; this way getting a glimpse of the crucial points of building a proper GA model.</p>
+<p>By its nature, the N-queens problem is not easily solvable using Genetic Algorithms, and you might finde much more suitable algorithms for this particular problem. Nevertheless, This work might be useful as a general tutorial on learning how to apply GA on any problem.</p>
+<p>It is important to note that the purpose of this project is not to achieve the best performance on computational terms neither to construct a model as efficient as possible, but to <em>explore</em> the general considerations involved in the developement of such algorithms and the metrics derived from them. Hence, we&rsquo;ll use R for its versatility and simplicity when working on ever-changing scripts, providing the more uncomplicated environment for this endeavour.</p>
+<hr>
+<h1 id="on-genetic-algorithms">On Genetic Algorithms</h1>
+<p>Genetic Algorithms are a family of algorithms whose purpose is to solve problems more efficiently than usual standard algorithms by using natural science metaphors with parts of the algorithm being strongly inspired by natural evolutionary behaviour; such as the concept of <strong>mutation</strong>, <strong>crossover</strong> and <strong>natural selection</strong>.</p>
+<p>When applying genetic algorithms one aims to construct a model that, with some randomness, tries different individuals (possible solutions, differentiated by a list of values that defines its genetic information) to a problem , measure its <strong>fitness</strong> - which would mean to evaluate whether this possible solutions are perfect solutions or just <em>good</em> to some extent, and to measure this degree of &lsquo;goodness&rsquo; - and to make the better solutions to <em>breed</em> and produce a new set of possible solutions with better fitness, and somehow closer to the perfect solution.</p>
+<p>This definition is not set in stone and there is some discussion on the classification of different types of algorithms, concerning whether or not they include the crossover part, the mutation or whichever the investigator seems fit to dismiss or include for an specific project. Can be named <em>genetic algorithm</em> an algorithm that has randomly distributed initial population, mutation, natural selection and genetic information being transmited from one generation to the next but it lacks of a crossover? It would be surely included in the label of <strong>Evolutionary Algorithms</strong> even though it has <em>genes</em> to carry forward. Anyway, we will not enter in such discussions nor delimit our model to the strict definitions of one category or another. This means that we may use terms as <em>genetic algorithm</em>, <em>mutation</em> or <em>crossover</em> as loosely as is reasonable for the sake of the purpose of this project.</p>
+<p>This lack of strict mathematical guidance gives the genetic algorithm some freedom to develop <em>heuristic</em> considerations into the build-up of the model. This advantage is also its weakness, for it is a very difficult task to construct a genetic algorithm that converges to the good solutions and not get stuck in solutions that are quite decent but not perfect.</p>
+<p>The final solution is then an end product of the best elements of previous generations, carried forward from generation to generation with some degree of randomness (mutation).</p>
+<p>Along this work, we will travel through the many decisions that have to be taken in order to construct a proper genetic algorithm and the considerations involved in such decisions, affecting the final performance of the model.</p>
+<h1 id="the-puzzle">The Puzzle</h1>
+<p>Once we understand what <em>Genetic Algorithm</em> means, we will try to develop a model guided by the principles of this family of algorithms that tries to solve the famous 8-queens problem, and generalised to as many queens as we can. The objective of this problem is to distribute <em>N</em> queens across a <em>NxN</em> chessboard in such way that no queen is able to kill any other queen in the next move.</p>
+<p>Knowing this, we have to decide how we do define the position of the queens in a straightforward way. The simplest approach is to use a family of permutations. This is a sequence of <em>8</em> unique numbers from <em>1</em> to <em>8</em> (or <em>N</em>, for the N-queen problem) from which we can construct &ldquo;brothers&rdquo; just permutating the position of the elements of the sequence. For instance: <em>(1,2,3,4,5,6,7,8)</em>, <em>(5,6,7,8,1,2,3,4)</em> or <em>(8,7,6,5,4,3,2,1)</em>. The elements of the sequence has the meaning of the position of each queen. In this way, every element of the array (sequence) represents a <em>row</em>, and from every one of which there is a queen; so the number of every element represents in which <em>column</em> we do put the queen. The solution showed in the image below would be represented as <em>(2,5,7,4,1,8,6,3)</em>.</p>
+
+    <img 
+    src="https://raw.githubusercontent.com/aljrico/optimization-algorithms/master/material/8queen-solution.jpg" 
+     class="center" 
+     
+     />
+
+
+<p>In fact, there are <em>40320</em> possible combinations for the 8-queen problems, or <em>N!</em> for <em>N</em> queens. The advantage of using a family of permutations as our <em>individuals</em> is that we do not permit the existence of repeated numbers in the same individual, because that would mean that there are more than one queen in the same row. This considerably minimises the computational effort.</p>
+<h1 id="breeding">Breeding</h1>
+<h2 id="crossover">Crossover</h2>
+<p>Once we have understood what is an individual and how we do define it, the first question to arise is how do we make them procreate. If we get two different individuals and we pretend to generate a child who is similar to both of them, a general standard procedure is to get some of the elements of the array that defines one of the parents, some other elements of the other parent and mix it together. This is trickier than it may seem, for our individuals are permutations and no repeteated numbers are allowed in its genetic code. There are some algorithms or techniques that allows us to recombinate the genetic information of two parents without repeated numbers, such as the <em>Partially Mapped Crossover</em>.</p>
+<p>In this particular problem, the <strong>N-queens problem</strong> seems obvious that a small change (few permutations) in an individual could lead to an utterly different result for the altered individual. This implies that a son resembling his parents does not have to be similarly good (or bad), for even small changes in the positions of a single queen can lead to a massacre.</p>
+<p>For this reason explained, I have decied to present an atypical crossover. This crossover consists in the comparision between the two parents, and to map whose elements of their arrays are equal. We then use this as a mask from which a new individual is created randomly (as the initial population) but remaining untouched those elements that were equal in his parents.</p>
+<p>A good example always helps to clarify things: Imagine that we have two parents, <em>P1 = (2,5,1,7,3,4,6,8)</em> and <em>P2 = (2,5,8,6,4,3,7,1)</em>. Notice that they have something in commmon, the first element and the second one; then one possible child would be <em>C1 = (2,5,3,6,1,8,7)</em>. The child has been generated randomly, but keeping the first position and the second one <em>untouched</em>; this is crucial, because the child carries on unaltered information about his parents. Why is this more useful than a simple recombination? Because we let the algorithm rapidly converge to a solution if those elements the parents had in common were part of a perfect solution, as the stated in the previous example.</p>
+<p>There are plenty of other techniques that try different approaches in order to make the algorithm faster or more robust. The &lsquo;Speciation Heuristic&rsquo;, for instance, penalizes crossover between candidate solutions that are too similar. This encourages population diversity and helps prevent premature convergence to a less optimal solution.</p>
+<p>Why is diversity so important? Two parents with a great &ndash; but not perfect &ndash; fitness can breed excellent &ndash; but not perfect &ndash; children, whose genetic information that is being carried forward from generations does not and will not pertain to a perfect solution. Thus, lack of diversity would lead the algorithm te get stuck into quite good solutions, but never perfect. Since our crossover has precisely the disadvantage of disencouraging diversity, we&rsquo;ll try to avoid it using another technique. We&rsquo;ll add mutation.</p>
+<p><strong>Clarification:</strong> At this point would be relevant to point out that we are making use of loose terminology. So, in order to not piss some people off, I&rsquo;d like to clarify the usage of some terms. First, the definition of the crossover is actually quite controversial and it triggers some utter discussions. The usage we are doing of the term might not be fitting the formal definition of a crossover, you should think about it as some kind of <em>heuristic function</em> that involves the resemblance of both parents and some degree of randomness, but not exactly a crossover, because it does not interchange genetic material.
+Consequently, a genetic algorithm without a proper crossover maybe should actually not be called <em>genetic</em> at all, and use another more generic label as <em>Evolutionary Algorithm</em>. We&rsquo;ll  keep talking about <em>crossover</em> and <em>genetic algorithm</em> from this point onwards anyway.</p>
+<h2 id="mutation">Mutation</h2>
+<p>So we don&rsquo;t want to get stuck in local minima. In order to avoid that, some degree of randomness is needed to escape from those pretty decent individuals. And for this purpose it is useful the concept of random mutations. A typical and very simple mutation consists in permutate two elements of the genoma of an individual. When and where to apply the mutation is chosen randomly and is one of the crucial parameters to balance between a more <em>exploratory</em> or a more <em>elitist</em> model.</p>
+<p>For our situation, we have chosen a weird crossover method with a great risk of falling into local minima; and for this reason we have chosen an also a weird mutation. The mutation that we will apply in our models is considerably more aggressive than the usual, for just one permutation may not let us escape from a whole family of inbreeded quite decent individuals with many elements in common but bearing no hope for a future perfect grandson.</p>
+<p>The mutation used in our models is, then, a complete rearrangement of the genoma of an individual when it is created. That means that every time a couple procreates and produces a child, this individual has a chance to be generated randomly, with no regard for parents resemblance whatsoever.</p>
+<p>Another possible solution for this would have been the standard usual mutation but with higher probabilities of occurring. This could make sense and it is a very reasonable solution; but considering the approach taken before, in which we stated that smaller changes can lead to utterly great differences in fitness, making minor changes very often would be more chaotic in our population developement than a rather improbable major change.</p>
+<p>Using the same example with parents <em>P1</em> and <em>P2</em> (the same as before), a child of this parents that suffers a mutation could be <em>Cm = (8,1,6,2,7,5,3,4)</em>.</p>
+<h1 id="fitness-function">Fitness Function</h1>
+<p>Now that we know how the individuals can procreate and breed, we need to decide which of them will do it. We have to set a rule to establish a hierarchy between individuals, so only some of them are able to produce offspring.</p>
+<p>The number of solutions for the 8-queens version is $92$. This number increases greatly for larger $N$s, and there is no closed formula to predict the number of unique solutions for any given $N$, even though there is a known sequence for it. Considering that we aim to generalise this problem for many more queens than $8$, simply counting the number of dead queens would be misleading when comparing the success of the solutions and could complicate the interpretations derived from the metrics of the model.</p>
+
+    <img 
+    src="https://raw.githubusercontent.com/aljrico/optimization-algorithms/master/material/solutions-space.jpg" 
+     class="center" 
+      width="65%" 
+     />
+
+
+<p>The most common and reasonable way to address this is to define a <em>fitness</em> function. The fitness is telling us, in some sense, how <em>good</em> this individual is.
+Provided that our goal is to obtain an individual with <em>0</em> dead queens, we could set our fitness function as the inverse of the number of dead queens. Or</p>
+<p><!-- raw HTML omitted --><!-- raw HTML omitted --><!-- raw HTML omitted --></p>
+<p>if we want to avoid divergences. This way, our fitness function reaches a maximum of <em>F=1</em> whenever the number of dead queens is <em>0</em>.</p>
+<h1 id="survival-of-the-fittest">Survival of the Fittest</h1>
+<p>Now we know how to establish a hierarchy between the individuals. The first move we make is to create a random initial population of the family of permutations of size $N$. How big is this initial population is a point of great interest but in which we will not focus. Too small population would lead to a less diverse population, and a too large population would lead to an overload of the memory and a lot of redundant time consumption for each computation. So in order to keep this analylsis simple we define a formula to set the initial population as $P = 2Q^2$, where $P$ is the size of the population, and $Q$ is the number of queens of the problem. This way, we maintain a population size in accordance with the magnitude of the problem. Once we have the initial population, the point of the following process will be to select, based on the fitness function, which indiviuals of this population will have the chance of procreating and perpetuate its genetic information.</p>
+<p>There are many different approaches to select the creators of the new generation. Some set a probability to procreate based on the fitness; others kill a bunch of low fitted individuals before they can reproduce. Some models let the individuals generate offspring again and again along the newer generations, if they survive the purge; whereas others models just let the parents to breed once and then they die. One thing is certain, and that the number of toddlers by couple and the extremism of the purge when killing individuals are parameters that have to be considered together, because a disbalance of this two mechanisms can lead to a premature extinction of the population - finalising the program; or worst, to an ever-growing population that can overload the RAM memory of our computer.</p>
+<p>For this project we tested three very different models of purging the population, all of them under the same heuristics that we are calling crossovers that we have already discussed. Now we will talk a bit about these different methodologies, its implications, its limitations and its advantages and how they play with our crossover.</p>
+<h2 id="method-1-recursive-adam--eve">Method 1: Recursive Adam &amp; Eve</h2>
+<p>This method essentially consists on killing all population except the two fittest individuals. These two survivors will produce a new entire population based on its genetic information. The point here is that this couple has so many toddlers that the new population is as numerous as the previous one.</p>
+<p>The point of this kind of method for deciding who are the survivors of the purge is an interesting synergy with the philosophy of our crossover. If <em>Adam &amp; Eve</em> survived the purge it is because they were the best individuals, if they had something in common it maybe is because it forms part of a perfect solution; this way the model converges extremely fast to a <em>good</em> solution. But, as we have discussed, <em>good</em> is not <em>perfect</em>. The disadvantage of this kind of this kind of models is that they are highly exploitative and so they get stuck very rapidly on a <em>good</em> solution, yet is improbable that they find a <em>perfect</em> one.</p>
+<p>We can tune the model into a one more exploratory with lower risk of getting stuck on a non-perfect solution if we increase the chance of mutation. As we have discussed, our mutation process is highly exploratory; so if we rise the probability of this a bit, we might find some delicated equilibrium between this combination of both extremely <em>exploratory</em> and extremely <em>exploitatory</em> measures.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r"><span style="color:#75715e"># Declaring functions needed to compute Genetic Algorithms --------------------------</span>
+
+<span style="color:#75715e"># Find common pattern in parents (function)</span>
+noncommon <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(par1,par2){
+	noncommon <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">which</span>(<span style="color:#f92672">!</span>par1<span style="color:#f92672">-</span>par2 <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>)
+}
+
+<span style="color:#75715e"># Generate offspring (function)</span>
+gen.offspring <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(par1,par2, noff, pmut){
+	<span style="color:#a6e22e">for </span>(j in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>noff){
+		offseed <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sample</span>(par1<span style="color:#a6e22e">[noncommon</span>(par1,par2)])
+		randomdummy <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">runif</span>(<span style="color:#ae81ff">1</span>)
+		<span style="color:#a6e22e">if </span>(randomdummy<span style="color:#f92672">&lt;=</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">-</span>pmut)){
+			<span style="color:#a6e22e">for </span>(i in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>nproblem){
+
+				<span style="color:#a6e22e">if </span>(i <span style="color:#f92672">%in%</span> <span style="color:#a6e22e">noncommon</span>(par1,par2)) {
+					son[i] <span style="color:#f92672">&lt;-</span> offseed[1]
+					offseed <span style="color:#f92672">&lt;-</span> offseed[<span style="color:#ae81ff">-1</span>]
+				}
+				else {son[i] <span style="color:#f92672">&lt;-</span> par1[i]}
+			}
+		}
+		else {son <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sample</span>(par1)}
+		offspring[[j]] <span style="color:#f92672">&lt;-</span> son
+	}
+	<span style="color:#a6e22e">return </span>(offspring)
+}
+
+<span style="color:#75715e"># Measuring fitness (function)</span>
+meas.error <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(subject){
+	error <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0</span>
+	<span style="color:#a6e22e">for </span>(i in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">length</span>(subject)){
+		x <span style="color:#f92672">&lt;-</span> i
+		y <span style="color:#f92672">&lt;-</span> subject[i]
+		<span style="color:#a6e22e">for</span>(j in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span><span style="color:#a6e22e">length</span>(subject)){
+			<span style="color:#a6e22e">if </span>(i <span style="color:#f92672">!=</span>j){
+				dx <span style="color:#f92672">&lt;-</span> j
+				dy <span style="color:#f92672">&lt;-</span> subject[j]
+				<span style="color:#a6e22e">if </span>(<span style="color:#a6e22e">abs</span>(dx<span style="color:#f92672">-</span>x)<span style="color:#f92672">==</span><span style="color:#a6e22e">abs</span>(dy<span style="color:#f92672">-</span>y)){error <span style="color:#f92672">=</span> error<span style="color:#ae81ff">+1</span>}
+			}
+
+		}
+	}
+	<span style="color:#a6e22e">return</span>(error)
+}
+
+kill <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(population,pmut,mort){
+	newpopulation <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">list</span>()
+	b <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">length</span>(population)
+	a <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">1</span>
+	<span style="color:#a6e22e">while</span>(a <span style="color:#f92672">&lt;</span> b <span style="color:#f92672">&amp;</span> <span style="color:#a6e22e">length</span>(population)<span style="color:#f92672">&gt;</span><span style="color:#ae81ff">1</span>){
+		w1 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sample</span>(population,<span style="color:#ae81ff">1</span>)[[1]]
+		w2 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sample</span>(population,<span style="color:#ae81ff">1</span>)[[1]]
+
+		newpopulation[[a]] <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">fight</span>(w1,w2,pmut,mort)
+		a <span style="color:#f92672">&lt;-</span> a<span style="color:#ae81ff">+1</span>
+	}
+	<span style="color:#a6e22e">return</span>(newpopulation)
+}
+
+
+<span style="color:#75715e"># Declaring parameters and executing model --------------------------</span>
+
+
+<span style="color:#75715e"># Magnitude of the Problem (Number of queens)</span>
+nproblem <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">10</span>
+
+<span style="color:#75715e"># Probability of mutation</span>
+pmut <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0.3</span>
+
+<span style="color:#75715e"># Seed for generating initial parents</span>
+seed <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">seq</span>(nproblem)
+
+<span style="color:#75715e"># List to be filled</span>
+offspring <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">list</span>()
+
+<span style="color:#75715e"># Arrays to be filled</span>
+son <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>()
+subject <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>()
+fitness <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>()
+max.fitness <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>()
+
+<span style="color:#75715e"># Number of toddlers by couple</span>
+noff <span style="color:#f92672">&lt;-</span> nproblem<span style="color:#f92672">*</span><span style="color:#ae81ff">5</span>
+
+<span style="color:#75715e"># Initial parents</span>
+par1 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sample</span>(seed)
+par2 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sample</span>(seed)
+
+
+b <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0</span>
+<span style="color:#75715e"># Creating further population ---------------------------------------------------</span>
+repeat{
+	<span style="color:#75715e"># Measuring fitness of every child</span>
+	<span style="color:#a6e22e">for </span>(i in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>noff){
+		offspring[[i]] <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">gen.offspring</span>(par1,par2,noff, pmut)[[i]]
+		subject <span style="color:#f92672">&lt;-</span> offspring[[i]]
+		fitness[i] <span style="color:#f92672">&lt;-</span> (<span style="color:#ae81ff">1</span><span style="color:#f92672">/</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">+</span><span style="color:#a6e22e">meas.error</span>(subject)))
+	}
+
+	<span style="color:#75715e"># Selecting most fittest childs as new parents</span>
+	par1 <span style="color:#f92672">&lt;-</span> offspring<span style="color:#a6e22e">[sort</span>(<span style="color:#f92672">-</span>fitness,index.return<span style="color:#f92672">=</span><span style="color:#66d9ef">TRUE</span>)[[2]][1]][[1]]
+	par2 <span style="color:#f92672">&lt;-</span> offspring<span style="color:#a6e22e">[sort</span>(<span style="color:#f92672">-</span>fitness,index.return<span style="color:#f92672">=</span><span style="color:#66d9ef">TRUE</span>)[[2]][2]][[1]]
+	max.fitness <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">append</span>(max.fitness, <span style="color:#a6e22e">max</span>(fitness))
+
+	b <span style="color:#f92672">&lt;-</span> b<span style="color:#ae81ff">+1</span>
+
+	<span style="color:#a6e22e">if </span>(<span style="color:#a6e22e">max</span>(fitness)<span style="color:#f92672">==</span> nproblem<span style="color:#f92672">*</span>(nproblem<span style="color:#ae81ff">-1</span>)) break
+	<span style="color:#a6e22e">if </span>(b <span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">5000</span>) break
+	<span style="color:#a6e22e">if </span>(<span style="color:#a6e22e">max</span>(fitness) <span style="color:#f92672">==</span> <span style="color:#ae81ff">1</span>) break
+}
+</code></pre></div><h2 id="method-2-kill-half-of-the-population">Method 2: Kill half of the population</h2>
+<p>I didn&rsquo;t get with a fancy name this time.</p>
+<p>Another way to address this problem is to tweak a bit our first method and be more magnanimous with the population, letting survive not only two individuals, but half of the entire population. Which half? The lest fitted half. Killing the worst half of the population let us continue with the philosophy of combining individuals which are the best, and use on them a crossover that remarks those characteristics that made them the best individuals in town. This way, improving the general fit of the next population. In this case though, letting far more individuals to breed, we are openning the solutions space to different families of individuals, increasing the variability between individuals. This saves us of converging into local minima - that is, getting stuck with quite decent but non-perfect individuals.</p>
+<p>Once we have several individuals ready to procreate, another important decision is to set how we make couples out of them. There are many different approaches to address this point. Some models pair the individuals randomly but with exclusivity - that is, any couple can just procreate between them and one time. Some others make couples out of individuals with similar fitness, so this way it guarantees some degree of inbreeding. Different models do exactly the contrary, they pair the survivors priorizing those couples with great differences between their fitness value, facilitating diversity within the population.</p>
+<p>In our case, we will make it more simple. We have just selected random couples with exclusivity. This way we can easily tune the number of toddlers by couple in order to predict the size of the future populations. Moreover, it makes sense that we aim to avoid strategies derived from considerations such as &ldquo;similar fitness implies similar individuals&rdquo;.</p>
+<p>In the future, we may call this model just <em>Half</em>, for simplicity.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r"><span style="color:#75715e"># Declaring functions needed to compute Genetic Algorithms --------------------------</span>
+
+<span style="color:#75715e"># Find common pattern in parents (function)</span>
+noncommon <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(par1,par2){
+	noncommon <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">which</span>(<span style="color:#f92672">!</span>par1<span style="color:#f92672">-</span>par2 <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>)
+}
+
+<span style="color:#75715e"># Generate offspring (function)</span>
+gen.offspring <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(par1,par2, noff, pmut){
+	<span style="color:#a6e22e">for </span>(j in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>noff){
+		offseed <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sample</span>(par1<span style="color:#a6e22e">[noncommon</span>(par1,par2)])
+		randomdummy <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">runif</span>(<span style="color:#ae81ff">1</span>)
+		<span style="color:#a6e22e">if </span>(randomdummy<span style="color:#f92672">&lt;=</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">-</span>pmut)){
+			<span style="color:#a6e22e">for </span>(i in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>nproblem){
+
+				<span style="color:#a6e22e">if </span>(i <span style="color:#f92672">%in%</span> <span style="color:#a6e22e">noncommon</span>(par1,par2)) {
+					son[i] <span style="color:#f92672">&lt;-</span> offseed[1]
+					offseed <span style="color:#f92672">&lt;-</span> offseed[<span style="color:#ae81ff">-1</span>]
+				}
+				else {son[i] <span style="color:#f92672">&lt;-</span> par1[i]}
+			}
+		}
+		else {son <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sample</span>(par1)}
+		offspring[[j]] <span style="color:#f92672">&lt;-</span> son
+	}
+	<span style="color:#a6e22e">return </span>(offspring)
+}
+
+<span style="color:#75715e"># Measuring fitness (function)</span>
+meas.error <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(subject){
+	error <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0</span>
+	<span style="color:#a6e22e">for </span>(i in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">length</span>(subject)){
+		x <span style="color:#f92672">&lt;-</span> i
+		y <span style="color:#f92672">&lt;-</span> subject[i]
+		<span style="color:#a6e22e">for</span>(j in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span><span style="color:#a6e22e">length</span>(subject)){
+			<span style="color:#a6e22e">if </span>(i <span style="color:#f92672">!=</span>j){
+				dx <span style="color:#f92672">&lt;-</span> j
+				dy <span style="color:#f92672">&lt;-</span> subject[j]
+				<span style="color:#a6e22e">if </span>(<span style="color:#a6e22e">abs</span>(dx<span style="color:#f92672">-</span>x)<span style="color:#f92672">==</span><span style="color:#a6e22e">abs</span>(dy<span style="color:#f92672">-</span>y)){error <span style="color:#f92672">=</span> error<span style="color:#ae81ff">+1</span>}
+			}
+
+		}
+	}
+	<span style="color:#a6e22e">return</span>(error)
+}
+
+kill <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(population,pmut,mort){
+	newpopulation <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">list</span>()
+	b <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">length</span>(population)
+	a <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">1</span>
+	<span style="color:#a6e22e">while</span>(a <span style="color:#f92672">&lt;</span> b <span style="color:#f92672">&amp;</span> <span style="color:#a6e22e">length</span>(population)<span style="color:#f92672">&gt;</span><span style="color:#ae81ff">1</span>){
+		w1 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sample</span>(population,<span style="color:#ae81ff">1</span>)[[1]]
+		w2 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sample</span>(population,<span style="color:#ae81ff">1</span>)[[1]]
+
+		newpopulation[[a]] <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">fight</span>(w1,w2,pmut,mort)
+		a <span style="color:#f92672">&lt;-</span> a<span style="color:#ae81ff">+1</span>
+	}
+	<span style="color:#a6e22e">return</span>(newpopulation)
+}
+
+
+<span style="color:#75715e"># Declaring parameters and executing model --------------------------</span>
+
+<span style="color:#75715e"># Number of toddlers by couple</span>
+noff <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">4</span>
+
+<span style="color:#75715e"># Magnitude of the Problem</span>
+nproblem <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">13</span>
+
+<span style="color:#75715e"># Probability of mutation</span>
+pmut <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0.1</span>
+
+<span style="color:#75715e"># Mortality</span>
+mort <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0.45</span>
+
+<span style="color:#75715e"># List to be filled</span>
+offspring <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">list</span>()
+population <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">list</span>()
+
+<span style="color:#75715e"># Arrays to be filled</span>
+son <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>()
+subject <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>()
+fitness <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>()
+av.fitness <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>()
+max.fitness <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>()
+
+<span style="color:#75715e"># Count Variables</span>
+b <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0</span>
+ind <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0</span>
+
+<span style="color:#75715e"># Initial Population ------------------------------------------------------</span>
+ipop <span style="color:#f92672">&lt;-</span> (nproblem)^2<span style="color:#f92672">*</span><span style="color:#ae81ff">2</span>
+<span style="color:#a6e22e">for</span>(i in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>ipop){
+	population[[i]] <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sample</span>(<span style="color:#a6e22e">seq</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>nproblem))
+}
+
+<span style="color:#75715e"># Reproduction ---------------------------------------------------</span>
+
+repeat{
+	m <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">1</span>
+	ind <span style="color:#f92672">&lt;-</span> ind <span style="color:#f92672">+</span> <span style="color:#a6e22e">length</span>(population)
+	<span style="color:#a6e22e">while</span>(<span style="color:#a6e22e">length</span>(population)<span style="color:#f92672">&gt;</span><span style="color:#ae81ff">1</span>){
+		<span style="color:#75715e"># Selecting parents from population</span>
+		par1 <span style="color:#f92672">&lt;-</span> population[[1]]; population <span style="color:#f92672">&lt;-</span> population[<span style="color:#ae81ff">-1</span>]
+		par2 <span style="color:#f92672">&lt;-</span> population[[1]]; population <span style="color:#f92672">&lt;-</span> population[<span style="color:#ae81ff">-1</span>]
+
+		<span style="color:#75715e"># Measuring fitness of every child</span>
+		<span style="color:#a6e22e">for </span>(i in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>noff){
+			offspring[[m]] <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">gen.offspring</span>(par1,par2,noff,pmut)[[i]]
+			subject <span style="color:#f92672">&lt;-</span> offspring[[m]]
+			fitness[m] <span style="color:#f92672">&lt;-</span> (<span style="color:#ae81ff">1</span><span style="color:#f92672">/</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">+</span><span style="color:#a6e22e">meas.error</span>(subject)))
+			m <span style="color:#f92672">&lt;-</span> m<span style="color:#ae81ff">+1</span>
+		}
+	}
+
+	<span style="color:#75715e"># Performance measures</span>
+	av.fitness <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">append</span>(av.fitness, <span style="color:#a6e22e">mean</span>(fitness))
+	max.fitness <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">append</span>(max.fitness, <span style="color:#a6e22e">max</span>(fitness))
+
+	<span style="color:#75715e"># Get the most fittest individual</span>
+	bestguy <span style="color:#f92672">&lt;-</span> offspring<span style="color:#a6e22e">[max</span>(fitness,index.return<span style="color:#f92672">=</span><span style="color:#66d9ef">TRUE</span>)]
+	<span style="color:#a6e22e">if </span>(<span style="color:#a6e22e">max</span>(fitness) <span style="color:#f92672">==</span> <span style="color:#ae81ff">1</span>) {
+		print <span style="color:#f92672">&lt;-</span> <span style="color:#e6db74">&#39;SUCCESS!&#39;</span>
+		break
+	}
+
+	<span style="color:#75715e"># Kill all parents</span>
+	population <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">list</span>()
+	<span style="color:#a6e22e">rm</span>(par1,par2)
+
+	<span style="color:#75715e"># Populating the new world</span>
+	a <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">round</span>(<span style="color:#a6e22e">length</span>(offspring)<span style="color:#f92672">*</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">-</span>mort)<span style="color:#f92672">*</span><span style="color:#ae81ff">0.5</span>)<span style="color:#f92672">*</span><span style="color:#ae81ff">2</span>
+	k <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">1</span>
+	<span style="color:#a6e22e">while </span>(<span style="color:#a6e22e">length</span>(offspring) <span style="color:#f92672">!=</span> <span style="color:#ae81ff">0</span>){
+		population[[k]] <span style="color:#f92672">&lt;-</span> offspring[<span style="color:#a6e22e">[max</span>(fitness,index.return<span style="color:#f92672">=</span><span style="color:#66d9ef">TRUE</span>)]]
+		fitness <span style="color:#f92672">&lt;-</span> fitness[<span style="color:#f92672">-</span><span style="color:#a6e22e">max</span>(fitness,index.return<span style="color:#f92672">=</span><span style="color:#66d9ef">TRUE</span>)]
+		offspring <span style="color:#f92672">&lt;-</span> offspring[<span style="color:#f92672">-</span><span style="color:#a6e22e">max</span>(fitness,index.return<span style="color:#f92672">=</span><span style="color:#66d9ef">TRUE</span>)]
+		k <span style="color:#f92672">&lt;-</span> k <span style="color:#ae81ff">+1</span>
+		<span style="color:#a6e22e">if</span>(k <span style="color:#f92672">&gt;</span> a) break
+	}
+	b <span style="color:#f92672">&lt;-</span> b<span style="color:#ae81ff">+1</span>
+	offspring <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">list</span>() <span style="color:#75715e"># Kill all children not fitted enough</span>
+
+	<span style="color:#a6e22e">if </span>(b <span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">5000</span>) {
+		print <span style="color:#f92672">&lt;-</span> <span style="color:#e6db74">&#34;FAILURE&#34;</span>
+		break
+		}
+	<span style="color:#a6e22e">if </span>(<span style="color:#a6e22e">length</span>(population)<span style="color:#f92672">&lt;</span><span style="color:#ae81ff">2</span>){
+		print <span style="color:#f92672">&lt;-</span> <span style="color:#e6db74">&#39;EXTINCTION&#39;</span>
+		break
+	}
+}
+</code></pre></div><h2 id="method-3-the-great-tournament">Method 3: The Great Tournament</h2>
+<p>This last method is a bit funny. <em>The Great Tournament</em> is a strange version of a standard methodology that we have not yet discussed, that is the <em>tournament selection</em>.</p>
+<p>A tournament essentially consists in selecting randomly a bunch of individuals and make them <em>fight</em>; and the result of this battle will decide which of them survives the purge. The most obvious way to decide the winner is to compare its fitness value; the victorious figther would be he who was the greater fitness. Another approach, more exploratory, would be simply to set a probability of victory biased towards the more fittest individual.</p>
+<p>As a clarification; imagine selecting 10 random individuals out of the entire population and making them to fight, one of them comes out as the mighty winner and goes into a dating pool to mate; then select another set of 10 random individuals and make them fight, select a winner, put him into the dating pool, and iterate. Once we have a dating pool plenty of proud champions, we make them breed and generate an entire new generation.</p>
+<p>Some simple tweaks that can be performed on the tournament method are changing the battle size; we can make 3, 10 or 100 individuals fight each other. There may be more than one winner, too. And what about the losers? Can they have the chance to get involved in another fight again and try to win this time, or we just kill them?</p>
+<p>These changes have a great impact on the performance of the final algorithm; for example, a larger tournament size implies a higher selection pressure, which turns in a more elitist model.</p>
+<p>For our study, we have selected battle size of just $2$ oponents. In this fight, the individual of higher fitness has a chance of winning of an $85%$, whereas the weaker individual has a $15%$ (obviously), with no regard on how big or small is the difference between their fitness.</p>
+<p>To this simple method, I have decided to add an interesting tweak that we&rsquo;ll give some kind of a second chance with the loser. If the stronger individual wins the battle, he is the survivor and he is sent to the dating pool to populate the new generation. But if the weaker individual is the one who wins, he does not survive the purge; he just mates with his opponent and gets a child, and this child is the one sent to the dating pool in order to populate the new generation, with his father/mother.</p>
+<p>This weird method has both exploratory characteristics - because of its small tournament size - and exploitatory ones - because of the impossibility for the weaker individual to carry forward its genetic information without mating his rival.</p>
+<p>The point again is to create some balance between exploratory and exploitatory characteristics that leads to a reasonable equilibrated model.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r"><span style="color:#75715e"># Declaring functions needed to compute Genetic Algorithms --------------------------</span>
+
+<span style="color:#75715e"># Find common pattern in parents (function)</span>
+noncommon <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(par1,par2){
+	noncommon <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">which</span>(<span style="color:#f92672">!</span>par1<span style="color:#f92672">-</span>par2 <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>)
+}
+
+<span style="color:#75715e"># Generate offspring (function)</span>
+gen.offspring <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(par1,par2, noff, pmut){
+	<span style="color:#a6e22e">for </span>(j in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>noff){
+		offseed <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sample</span>(par1<span style="color:#a6e22e">[noncommon</span>(par1,par2)])
+		randomdummy <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">runif</span>(<span style="color:#ae81ff">1</span>)
+		<span style="color:#a6e22e">if </span>(randomdummy<span style="color:#f92672">&lt;=</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">-</span>pmut)){
+			<span style="color:#a6e22e">for </span>(i in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>nproblem){
+
+				<span style="color:#a6e22e">if </span>(i <span style="color:#f92672">%in%</span> <span style="color:#a6e22e">noncommon</span>(par1,par2)) {
+					son[i] <span style="color:#f92672">&lt;-</span> offseed[1]
+					offseed <span style="color:#f92672">&lt;-</span> offseed[<span style="color:#ae81ff">-1</span>]
+				}
+				else {son[i] <span style="color:#f92672">&lt;-</span> par1[i]}
+			}
+		}
+		else {son <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sample</span>(par1)}
+		offspring[[j]] <span style="color:#f92672">&lt;-</span> son
+	}
+	<span style="color:#a6e22e">return </span>(offspring)
+}
+
+<span style="color:#75715e"># Measuring fitness (function)</span>
+meas.error <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(subject){
+	error <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0</span>
+	<span style="color:#a6e22e">for </span>(i in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">length</span>(subject)){
+		x <span style="color:#f92672">&lt;-</span> i
+		y <span style="color:#f92672">&lt;-</span> subject[i]
+		<span style="color:#a6e22e">for</span>(j in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span><span style="color:#a6e22e">length</span>(subject)){
+			<span style="color:#a6e22e">if </span>(i <span style="color:#f92672">!=</span>j){
+				dx <span style="color:#f92672">&lt;-</span> j
+				dy <span style="color:#f92672">&lt;-</span> subject[j]
+				<span style="color:#a6e22e">if </span>(<span style="color:#a6e22e">abs</span>(dx<span style="color:#f92672">-</span>x)<span style="color:#f92672">==</span><span style="color:#a6e22e">abs</span>(dy<span style="color:#f92672">-</span>y)){error <span style="color:#f92672">=</span> error<span style="color:#ae81ff">+1</span>}
+			}
+
+		}
+	}
+	<span style="color:#a6e22e">return</span>(error)
+}
+
+kill <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(population,pmut,mort){
+	newpopulation <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">list</span>()
+	b <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">length</span>(population)
+	a <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">1</span>
+	<span style="color:#a6e22e">while</span>(a <span style="color:#f92672">&lt;</span> b <span style="color:#f92672">&amp;</span> <span style="color:#a6e22e">length</span>(population)<span style="color:#f92672">&gt;</span><span style="color:#ae81ff">1</span>){
+		w1 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sample</span>(population,<span style="color:#ae81ff">1</span>)[[1]]
+		w2 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sample</span>(population,<span style="color:#ae81ff">1</span>)[[1]]
+
+		newpopulation[[a]] <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">fight</span>(w1,w2,pmut,mort)
+		a <span style="color:#f92672">&lt;-</span> a<span style="color:#ae81ff">+1</span>
+	}
+	<span style="color:#a6e22e">return</span>(newpopulation)
+}
+
+
+fight <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(w1, w2,pmut,mort){
+	e1 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">meas.error</span>(w1)
+	e2 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">meas.error</span>(w2)
+
+	<span style="color:#a6e22e">if</span>(e1 <span style="color:#f92672">&gt;</span> e2) {
+		a <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">runif</span>(<span style="color:#ae81ff">1</span>)
+		<span style="color:#a6e22e">if</span>(a <span style="color:#f92672">&lt;</span> mort) vic <span style="color:#f92672">&lt;-</span> w2
+		else  vic <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">gen.offspring </span>(w1,w2,<span style="color:#ae81ff">1</span>,pmut)[[1]]
+	}
+	<span style="color:#a6e22e">if</span>(e1<span style="color:#f92672">&lt;</span> e2){
+		a <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">runif</span>(<span style="color:#ae81ff">1</span>)
+		<span style="color:#a6e22e">if</span>(a<span style="color:#f92672">&lt;</span> mort) vic <span style="color:#f92672">&lt;-</span> w1
+		else vic <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">gen.offspring </span>(w1,w2,<span style="color:#ae81ff">1</span>,pmut)[[1]]
+	}
+	<span style="color:#a6e22e">if</span>(e1 <span style="color:#f92672">==</span> e2) vic <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">gen.offspring </span>(w1,w2,<span style="color:#ae81ff">1</span>,pmut)[[1]]
+	<span style="color:#a6e22e">return</span>(vic)
+}
+
+<span style="color:#75715e"># Declaring parameters and executing model --------------------------</span>
+
+<span style="color:#75715e"># Number of toddlers by couple</span>
+noff <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">5</span>
+
+<span style="color:#75715e"># Magnitude of the Problem</span>
+nproblem <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">10</span>
+
+<span style="color:#75715e"># Probability of mutation</span>
+pmut <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0.01</span>
+
+<span style="color:#75715e"># Mortality</span>
+mort <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0.5</span>
+
+<span style="color:#75715e"># List to be filled</span>
+offspring <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">list</span>()
+population <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">list</span>()
+
+<span style="color:#75715e"># Arrays to be filled</span>
+son <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>()
+subject <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>()
+fitness <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>()
+av.fitness <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>()
+max.fitness <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>()
+
+<span style="color:#75715e"># Count Variables</span>
+b <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0</span>
+ind <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0</span>
+
+<span style="color:#75715e"># Initial Population ------------------------------------------------------</span>
+ipop <span style="color:#f92672">&lt;-</span> (nproblem)^2<span style="color:#f92672">*</span><span style="color:#ae81ff">2</span>
+<span style="color:#a6e22e">for</span>(i in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>ipop){
+	population[[i]] <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sample</span>(<span style="color:#a6e22e">seq</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>nproblem))
+}
+
+<span style="color:#75715e"># Reproduction ---------------------------------------------------</span>
+
+repeat{
+	m <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">1</span>
+	ind <span style="color:#f92672">&lt;-</span> ind <span style="color:#f92672">+</span> <span style="color:#a6e22e">length</span>(population)
+
+	<span style="color:#75715e"># Measuring fitness of every member of the population for statistical purposes</span>
+	<span style="color:#a6e22e">for </span>(i in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span><span style="color:#a6e22e">length</span>(population)){
+		subject <span style="color:#f92672">&lt;-</span> population[[i]]
+		fitness[i] <span style="color:#f92672">&lt;-</span> (<span style="color:#ae81ff">1</span><span style="color:#f92672">/</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">+</span><span style="color:#a6e22e">meas.error</span>(subject)))
+	}
+
+
+	<span style="color:#75715e"># Performance measures</span>
+	av.fitness <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">append</span>(av.fitness, <span style="color:#a6e22e">mean</span>(fitness))
+	max.fitness <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">append</span>(max.fitness, <span style="color:#a6e22e">max</span>(fitness))
+
+	<span style="color:#75715e"># Get the most fittest individual</span>
+	bestguy <span style="color:#f92672">&lt;-</span> population<span style="color:#a6e22e">[max</span>(fitness,index.return<span style="color:#f92672">=</span><span style="color:#66d9ef">TRUE</span>)]
+	<span style="color:#a6e22e">if </span>(<span style="color:#a6e22e">max</span>(fitness) <span style="color:#f92672">==</span> <span style="color:#ae81ff">1</span>) {
+		print <span style="color:#f92672">&lt;-</span> <span style="color:#e6db74">&#39;SUCCESS!&#39;</span>
+		break
+	}
+
+	<span style="color:#75715e"># Killing festivity</span>
+	population <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">kill</span>(population,pmut,mort)
+	b <span style="color:#f92672">&lt;-</span> b<span style="color:#ae81ff">+1</span>
+
+	<span style="color:#a6e22e">while</span>(<span style="color:#a6e22e">length</span>(population)<span style="color:#f92672">&gt;</span><span style="color:#ae81ff">1</span>){
+		<span style="color:#75715e"># Selecting parents from population</span>
+		par1 <span style="color:#f92672">&lt;-</span> population[[1]]; population <span style="color:#f92672">&lt;-</span> population[<span style="color:#ae81ff">-1</span>]
+		par2 <span style="color:#f92672">&lt;-</span> population[[1]]; population <span style="color:#f92672">&lt;-</span> population[<span style="color:#ae81ff">-1</span>]
+		<span style="color:#a6e22e">for</span>(i in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>noff){
+			offspring[[m]] <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">gen.offspring</span>(par1,par2,noff,pmut)[[i]]
+		}
+		m <span style="color:#f92672">&lt;-</span> m<span style="color:#ae81ff">+1</span>
+	}
+
+	population <span style="color:#f92672">&lt;-</span> offspring
+
+	<span style="color:#a6e22e">if </span>(b <span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">5000</span>) {
+		print <span style="color:#f92672">&lt;-</span> <span style="color:#e6db74">&#34;FAILURE&#34;</span>
+		break
+	}
+	<span style="color:#a6e22e">if </span>(<span style="color:#a6e22e">length</span>(population)<span style="color:#f92672">&lt;</span><span style="color:#ae81ff">2</span>){
+		print <span style="color:#f92672">&lt;-</span> <span style="color:#e6db74">&#39;EXTINCTION&#39;</span>
+		break
+	}
+}
+</code></pre></div><h1 id="results--discussion">Results &amp; Discussion</h1>
+<h2 id="measurement-metrics">Measurement Metrics</h2>
+<p>Now that we have constructed completely our <strong>Genetic Algorithms</strong>, it is important to be aware of how well they perform. In computational problems, it is usual to mean <em>fast</em> when we say <em>good</em>; so the point of this chapter is to evaluate the speed in which our algorithms manage to find a perfect solution.</p>
+<p>As stated in the abstract, we are using an inefficient programming language. So the computing time required for any process would be much larger than with many others languages such as &ldquo;C&rdquo; or &ldquo;Fortran&rdquo;. Hence, the point of the measurment of performance of our algorithms has to be something that can be extrapolated to many others programming languges, or to a more efficient programmer; hoping that some of these algorithms will be transcribed in such way that they may be more useful for direct application.</p>
+<p>For this reason, the performance metric that we will be measuring all the time will be <strong>individuals</strong>. Along all the algorithms we are generating tons of individuals, and every individual is a trial to get the very solution of the problem. Thus, the fewer individuals a program has to generate in order to get the proper solution the more efficient it is. How much time it takes to generate every individual is a problem essentially regarding the programming language and the diligence in which the program is coded; effort that lands outside the scope of this project.</p>
+<p>Another perspective to analyse the performance of a Genetic Algorithm is to measure the <em>time evolution</em> of the average fitness of its population from generation to generation, or the time evolution of the fitness of the best invidiual of each generation. Ideally, a proper algorithm tens to consistently improve those metrics over generations.</p>
+<h2 id="performance">Performance</h2>
+<p>Now that we know what to measure, we must measure it. In order to do that, we run those models over different number of queens, with different numbers of probability of mutation and as many times as it has been plausible. Then all data is recorded and stored for its analysis. This can be done with the bunchs of code stated above. It might take a few hours to compute everything, so I&rsquo;d recommend to let it running overnight.</p>
+<p>Once we have all the data generated, we just need to loaded and clean it a little bit for proper visualisation.</p>
+<p>We&rsquo;ll start theh analysis  looking at the data without making distinction between the models.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">df <span style="color:#f92672">%&gt;%</span>
+	<span style="color:#a6e22e">filter</span>(model <span style="color:#f92672">!=</span> <span style="color:#e6db74">&#34;random&#34;</span>) <span style="color:#f92672">%&gt;%</span>
+	<span style="color:#a6e22e">ggplot</span>(<span style="color:#a6e22e">aes</span>(x<span style="color:#f92672">=</span><span style="color:#a6e22e">as.factor</span>(nqueens), y <span style="color:#f92672">=</span> <span style="color:#a6e22e">log</span>(ind), fill <span style="color:#f92672">=</span> <span style="color:#a6e22e">as.factor</span>(nqueens))) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">geom_violin</span>(bw<span style="color:#f92672">=</span><span style="color:#ae81ff">0.2</span>, scale<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;area&#34;</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">scale_fill_viridis</span>(discrete<span style="color:#f92672">=</span><span style="color:#66d9ef">TRUE</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">labs</span>(x <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Number of Queens&#34;</span>, y <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Log(Individuals)&#34;</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">theme_bw</span>() <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">theme</span>(legend.position<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;none&#34;</span>)
+</code></pre></div>
+    <img 
+    src="https://raw.githubusercontent.com/aljrico/blog/master/_posts/rmarkdown/genetic-algorithms_files/figure-html/unnamed-chunk-5-1.png" 
+     class="center" 
+     
+     />
+
+
+<p>If we look at the figure above, we can appreciate the increase in computational effort when we rise the number of queens of the problem to solve. One interesting thing about these kind of plots is that we can appreciate the distribution of the results, and notice that not only increases the computation needed to solve a problem, but the dispersion of the results. This means that it is harder to predict the time needed to get a solution.</p>
+<p>If we want to dig a little deeper, we can split these results from the different models used each time we run the program.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">df <span style="color:#f92672">%&gt;%</span>
+	<span style="color:#a6e22e">filter</span>(model <span style="color:#f92672">!=</span> <span style="color:#e6db74">&#34;random&#34;</span>) <span style="color:#f92672">%&gt;%</span>
+	<span style="color:#a6e22e">ggplot</span>(<span style="color:#a6e22e">aes</span>(x<span style="color:#f92672">=</span><span style="color:#a6e22e">as.factor</span>(nqueens), y <span style="color:#f92672">=</span> <span style="color:#a6e22e">log</span>(ind), colour <span style="color:#f92672">=</span> <span style="color:#a6e22e">as.factor</span>(model))) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">geom_jitter</span>() <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">scale_colour_viridis</span>(discrete<span style="color:#f92672">=</span><span style="color:#66d9ef">TRUE</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">labs</span>(x <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Number of Queens&#34;</span>, y <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Log(Individuals)&#34;</span>, colour <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Model&#34;</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">theme_bw</span>()
+</code></pre></div>
+    <img 
+    src="https://raw.githubusercontent.com/aljrico/blog/master/_posts/rmarkdown/genetic-algorithms_files/figure-html/unnamed-chunk-6-1.png" 
+     class="center" 
+     
+     />
+
+
+<p>In this figure, we can notice how different they behave. It can be seen that the <code>tourn</code> (which is the <em>Great Tournament</em> model) behave much more chaotically than the other two. Moreover, it seems that usually the <code>half</code> model and the <code>allbut2</code> (<em>Recursive Adam &amp; Eve</em>) tend to be quicker finding the optimal solution. This happens for a number of queens lower than $10$, once we have reached that level of difficulty, the results start to be messy and somehow less predictable.</p>
+<hr>
+<p>So far, we have seen the relation between the Number of Queens of the problem and the computaional effort. It would be interesting to analyse now the effect on performance of the probability of mutation. We constructed this possibility, when building the model, in order to compensate some of the most elitistic characteristics of our models. It could be interesting how the value of this parameters affects the results.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">df <span style="color:#f92672">%&gt;%</span>
+	<span style="color:#a6e22e">filter</span>(model <span style="color:#f92672">!=</span> <span style="color:#e6db74">&#34;random&#34;</span>) <span style="color:#f92672">%&gt;%</span>
+	<span style="color:#a6e22e">ggplot</span>(<span style="color:#a6e22e">aes</span>(x<span style="color:#f92672">=</span><span style="color:#a6e22e">as.factor</span>(nqueens),y<span style="color:#f92672">=</span><span style="color:#a6e22e">as.factor</span>(mutate))) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">geom_tile</span>(<span style="color:#a6e22e">aes</span>(fill<span style="color:#f92672">=</span><span style="color:#a6e22e">log</span>(ind))) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">facet_wrap</span>(<span style="color:#f92672">~</span>model) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">scale_fill_viridis</span>(discrete<span style="color:#f92672">=</span><span style="color:#66d9ef">FALSE</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">labs</span>(x <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Number of Queens&#34;</span>, y <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Mutation Probability&#34;</span>, fill <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Log(Individuals)&#34;</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">theme_bw</span>()
+</code></pre></div>
+    <img 
+    src="https://raw.githubusercontent.com/aljrico/blog/master/_posts/rmarkdown/genetic-algorithms_files/figure-html/unnamed-chunk-7-1.png" 
+     class="center" 
+     
+     />
+
+
+<p>If we now take a look at the figure above, we can notice the major differences between the models, and how differently they make use of the probability of mutation. The biggest influence can be seen in the <code>allbut2</code> model. In fact, smaller probabilities of mutation such as $0.01$ or $0.05$ have been to be removed from the analysis because this model took so much time to compute even the smaller problems that the collection of relevant data was not feasible. This issue remarks the great importance of mutation in the construction of so very exploitatory models. Actually, it might be noticed that it behaves better when this probability is increased; achieving some kind of sweetspot around $p=0.5$.</p>
+<p>Nevertheless, it is also relevant to point out how unconnected the probability of mutation and the performance of the <code>half</code> model and the <code>tournament</code> model they seem. The number of individuals needed to find a solution does not seem to depend on the probability of mutation whatsoever.This kind of insight is extremely useful developing this kind of algorithms.</p>
+<h2 id="what-makes-a-good-model">What makes a Good Model</h2>
+<p>Despite all this fancy algorithms, we also know that is always possible to solve the N-Queens problem using the simplest and savagest method available, just trying combinations at random until one of them happens to be perfect and outputs $F = 1$. How probable is that? It depends on the dimensions of each problem. If we look back at the table of the solucions space we can see the number of possible unique individuals, with the number of unique perfect solutions of the problem. This way we can find out the an expected number of individuals needed to get a perfect solution.</p>
+<p>More practically, we could just plainly generate random permutations of the individuals until one of them happens to be the perfect solution. Then record how many trials have been necessaries, and iterate until we have enough data to compare the results.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">df <span style="color:#f92672">%&gt;%</span> <span style="color:#75715e"># Used</span>
+	<span style="color:#a6e22e">filter</span>(model <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;random&#34;</span>) <span style="color:#f92672">%&gt;%</span>
+	<span style="color:#a6e22e">ggplot</span>(<span style="color:#a6e22e">aes</span>(x<span style="color:#f92672">=</span><span style="color:#a6e22e">as.factor</span>(nqueens), y <span style="color:#f92672">=</span> <span style="color:#a6e22e">log</span>(ind), fill <span style="color:#f92672">=</span> <span style="color:#a6e22e">as.factor</span>(nqueens))) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">geom_violin</span>(bw<span style="color:#f92672">=</span><span style="color:#ae81ff">0.25</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">scale_fill_viridis</span>(discrete<span style="color:#f92672">=</span><span style="color:#66d9ef">TRUE</span>, option <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;B&#34;</span>, begin<span style="color:#f92672">=</span><span style="color:#ae81ff">0.1</span>,end <span style="color:#f92672">=</span><span style="color:#ae81ff">0.9</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">labs</span>(x <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Number of Queens&#34;</span>, y <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Log(Individuals)&#34;</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">theme_bw</span>() <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">theme</span>(legend.position <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;none&#34;</span>)
+</code></pre></div>
+    <img 
+    src="https://raw.githubusercontent.com/aljrico/blog/master/_posts/rmarkdown/genetic-algorithms_files/figure-html/unnamed-chunk-8-1.png" 
+     class="center" 
+     
+     />
+
+
+<p>Note that this plot is in logarithmic scale. See how rapidly the computational requirements increase over the difficulty of the problem.</p>
+<hr>
+<p>Now the interesting point is to compare the performance of our models with the random selection, as shown in the figure below. In this graph can be seen how much better the random selection performs, compared to our models. This is kind of disencouraging at first sight, but note that as we increase the difficulty of the problem, our models start to be relatively more useful and eventually surpasing the power of randomness.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">df <span style="color:#f92672">%&gt;%</span>
+	<span style="color:#a6e22e">filter</span>(nqueens <span style="color:#f92672">!=</span> <span style="color:#ae81ff">13</span> <span style="color:#f92672">&amp;</span> nqueens <span style="color:#f92672">!=</span> <span style="color:#ae81ff">14</span> <span style="color:#f92672">&amp;</span> nqueens <span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">3</span>) <span style="color:#f92672">%&gt;%</span>
+	<span style="color:#a6e22e">filter</span>(mutate <span style="color:#f92672">!=</span><span style="color:#ae81ff">0.01</span> <span style="color:#f92672">&amp;</span> mutate <span style="color:#f92672">!=</span><span style="color:#ae81ff">0.05</span>) <span style="color:#f92672">%&gt;%</span>
+	<span style="color:#a6e22e">ggplot</span>(<span style="color:#a6e22e">aes</span>(x<span style="color:#f92672">=</span><span style="color:#a6e22e">as.factor</span>(nqueens), y <span style="color:#f92672">=</span> <span style="color:#a6e22e">log</span>(ind), fill <span style="color:#f92672">=</span> <span style="color:#a6e22e">as.factor</span>(model))) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">geom_violin</span>(bw <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">scale_fill_viridis</span>(discrete<span style="color:#f92672">=</span><span style="color:#66d9ef">TRUE</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">labs</span>(x <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Number of Queens&#34;</span>, y <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Log(Individuals)&#34;</span>, fill <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Model&#34;</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">theme_bw</span>()
+</code></pre></div><p><img src="rmarkdown/genetic-algorithms_files/figure-html/unnamed-chunk-9-1.png" alt=""><!-- raw HTML omitted --></p>
+<!-- raw HTML omitted -->
+<p>These results might reinforce the idea that complex optimisation schemes such as <em>Genetic Algorithms</em> might be useful just for extremely complex problems. In our case, for a number of queens greater than $10$.</p>
+<h2 id="time-evolution-of-fitness">Time Evolution of Fitness</h2>
+<p>At first sight, the utility of this measurement might not appear so obvious, but it may be remarkable to know whether a population of solutions tends to improve consistently from generation to generation or it justs bounds randomly until some lucky guy hits the jackpot and it just happens to be the perfect solution. Ideally, a proper model should provide a steady ascending curve describing the average fitness of the population across generations.</p>
+<!-- raw HTML omitted -->
+<h1 id="conclusions">Conclusions</h1>
+<p>Along this article, we have seen the implications of each decision made when constructing a genetic algorithm model. We have noticed how unalike the performance can be when using differnet survival models and how differently they interact with mutation.</p>
+<p>For lower number of queens, we have noticed the superiority of the <em>Kill Half of the Population</em> and <em>Recursive Adam &amp; Eve</em> models over the the <em>Great Tournament</em>; despite that random selection outperformed all of them. From number of queens higher than $10$ the results have shown a more unpredictable behaviour, and is not quite clear whether or not made-up models as ours are more useful than simple random trial and error, but the results are quite encouraging, and with theh gradual increase in overall fitness in the population, is not unreasonable to sugggest that the model would perform much better than randomness for even higher number of queens.</p>
+<p>The parameters involved &ndash; such as <em>mutation probability</em> &ndash; have been of great importance for the most elitistic model (the <em>Recursive Adam &amp; Eve</em>) but of little importance for the other two.</p>
+<p>This thought opens up another point of the results that ought to be considered. The main parameter studied in this project has been the <em>mutation probability</em>, and they have not shown quite clearly whether this parameter has a relevant effect on the performance of the models.  The common characteristic of each of the models was their &ldquo;crossover&rdquo;. Moreover, the mutation probability, in the way that has been created, can be thought as the probability that the crossover does not actually occur when producing a new child; and it is just created randomly. This leads to the conclusion that it is not plainly clear whether our &ldquo;crossover&rdquo; method does have a relevant effect in the developement of future generations or not. The only exception for that has been showed when using very little mutation probability on the <code>allbut2</code> model; in that case the program got stuck in local minima partly as a cause of this &ldquo;crossover&rdquo;. Nevertheless, occasional solutions have been found using the <code>allbut2</code> with a moderate mutation probability ($0.25 &lt; p &lt; 0.75$) that largely outperformed the rest of the models. In some sense, we can think that this model, using this &ldquo;crossover&rdquo; is so elitistic that converges rapidly to a solution, regardless of whether it is perfect or not; so it is not strange that sometimes finds a perfect solution faster than the rest.</p>
+<p>We do not have clear enough results to conclude whether or not these Genetic Algorithm models are more useful finding <strong>N-Queens</strong> solutions than a random trial and error, for higher number of queens. And it is clear than the trial and error performs far better than our models, when applied on lower number of queens.</p>
+<p>Despite this discouragment, further investigation can be made applying these models on even higher number of queens, in different problems or using different &ldquo;crossovers&rdquo;. Future research should also dig deeper on the importance of different parameters such as the <strong>population size</strong>, for this variable makes a great difference in the performance of this and other models.</p>
+<h1 id="further-reading">Further Reading</h1>
+<p>If you have enjoyed this article, you might be interested in reading further on Genetic Algorithms. Genetic Algorithms is a kind of optimisation algorithm that is englobed within the concept of metaheuristics. For anyone interested in the subject, I highly recomment the following books. I can not stress enough how useful they are.</p>
+<ul>
+<li><a href="https://amzn.to/2M0rFNr">Handbook of Metaheuristics</a></li>
+<li><a href="https://amzn.to/2wPFGsk">Handbook of Natural Computing</a></li>
+<li><a href="https://amzn.to/2wMH4Lp">The theory of Evolution Strategies</a></li>
+</ul>
+]]></content>
+        </item>
+        
+        <item>
+            <title>Testing Financial Strategies with R: Stock Picking</title>
+            <link>https://aljrico.com/posts/1/01/testing-financial-strategies-with-r-stock-picking/</link>
+            <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+            
+            <guid>https://aljrico.com/posts/1/01/testing-financial-strategies-with-r-stock-picking/</guid>
+            <description>One of the most common financial advices that you can hear in every christmas meal is that you should be saving a fixed amount of money each month. Not only that, but you should avoid pre-cooked schemes offered by your bank and simply invest your savings in the stock market. Investing in the U.S. market or even the global stock market has been a wise decision if you look at the long term (more than 10 years), even if you invested in peak of any pre-crisis crest.</description>
+            <content type="html"><![CDATA[<p>One of the most common financial advices that you can hear in every christmas meal is that you should be saving a fixed amount of money each month. Not only that, but you should avoid pre-cooked schemes offered by your bank and simply invest your savings in the stock market. Investing in the U.S. market or even the global stock market has been a wise decision if you look at the long term (more than 10 years), even if you invested in peak of any pre-crisis crest.</p>
+<p>So it seems that saving some money and investing it in stocks looks like a good idea. Great. Now, which market should you invest in? Which stocks? A safer approach to that is just buying an ETF and follow the trend of some index. At the end you are putting your money in the general behaviour of the market. If the economy does well, you&rsquo;ll do well. Otherwise, you could try to figure out which firms will exceed the market. In this article I will outline a way to test different strategies to base that decision on, using quantitative analysis of the financial statements.</p>
+<p>Even though both claim to be quantitative, I need to stress the difference between what I will suggest and the famous <em>Technical Analysis</em> (TA). TA is built on historical price developments and believes that certain patterns on price history may be identified and used to predict future movements of the quotes. TA focuses on how investors&rsquo; behaviour might push prices in the future based on historical patterns.</p>
+<p>In contrast with that, <em>Fundamental Analysis</em> (FA) focuses on the firm and the value of the ownership right itself, rather than on the market price of it. It established a defined difference between <em>Value</em> and <em>Price</em>. And it believes that the <em>Price</em> tends to reflect <em>Value</em> in the long term. Hence, it claims that the fair value can be computed from the future cash flows, debt, strategic position or future plans.</p>
+<p>There is a huge and broad field on fundamental analysis that covers a lot of different perspectives of a firm; some of them quantitative and some others qualitative. One of the quantitative is the study of the financial statements of the firms.</p>
+<p>Now, we&rsquo;ll get down to business.</p>
+<hr>
+<h1 id="retrieving-data">Retrieving Data</h1>
+<p>In order to begin, we need data. We want to try out how we can compute the financial statements of firms to decide in which we should invest our savings. Therefore, we need those financial statements.</p>
+<p>From now on, we will be making use of some R packages:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r"><span style="color:#a6e22e">library</span>(tidyverse)
+<span style="color:#a6e22e">library</span>(data.table)
+<span style="color:#a6e22e">library</span>(quantmod)
+<span style="color:#a6e22e">library</span>(rvest)
+<span style="color:#a6e22e">library</span>(progress)
+<span style="color:#a6e22e">library</span>(lubridate)
+<span style="color:#a6e22e">library</span>(feather)
+<span style="color:#a6e22e">library</span>(zoo)
+
+</code></pre></div><p>Firstly, we need a list of the stock universe that we will be considering. For simplicity, I constructed this making use of the widest indexes of the <em>Standard &amp; Poors</em>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">getTickers <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(){
+	sp500_wiki <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">read_html</span>(
+		<span style="color:#e6db74">&#34;https://en.wikipedia.org/wiki/List_of_S%26P_500_companies&#34;</span>)
+
+	symbols_table <span style="color:#f92672">&lt;-</span> sp500_wiki <span style="color:#f92672">%&gt;%</span>
+		<span style="color:#a6e22e">html_nodes</span>(xpath<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;//*[@id=&#34;mw-content-text&#34;]/div/table[1]&#39;</span>) <span style="color:#f92672">%&gt;%</span>
+		<span style="color:#a6e22e">html_table</span>()
+
+	symbols_table <span style="color:#f92672">&lt;-</span> symbols_table[[1]]
+	tickers <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">as.character</span>(symbols_table<span style="color:#f92672">$</span>`Ticker symbol`)
+
+	sp1000_wiki <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">read_html</span>(
+		<span style="color:#e6db74">&#34;https://en.wikipedia.org/wiki/List_of_S%26P_1000_companies&#34;</span>)
+
+	symbols_table <span style="color:#f92672">&lt;-</span> sp1000_wiki <span style="color:#f92672">%&gt;%</span>
+		<span style="color:#a6e22e">html_nodes</span>(xpath<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;//*[@id=&#34;mw-content-text&#34;]/div/table[3]&#39;</span>) <span style="color:#f92672">%&gt;%</span>
+		<span style="color:#a6e22e">html_table</span>()
+
+	symbols_table <span style="color:#f92672">&lt;-</span> symbols_table[[1]]
+	tickers2 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">as.character</span>(symbols_table<span style="color:#f92672">$</span>`Ticker Symbol`)
+
+	tickers <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>(tickers,tickers2)
+
+	<span style="color:#a6e22e">for</span>(i in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span><span style="color:#a6e22e">length</span>(tickers)) tickers[[i]] <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">gsub</span>(<span style="color:#e6db74">&#39;\\.&#39;</span>, <span style="color:#e6db74">&#39;-&#39;</span>, tickers[[i]])
+
+	<span style="color:#a6e22e">return</span>(tickers)
+}
+</code></pre></div><p>With this function <code>getTickers()</code> we&rsquo;ve got a complete list of the tickers of 1500 companies, including 500 from the SP500. Now, we&rsquo;ll use these stickers to get the financial statements from each one of the companies.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">
+getFinancials <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(ticker){
+	stock <span style="color:#f92672">&lt;-</span> ticker
+	output <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">tibble</span>()
+
+	<span style="color:#a6e22e">for </span>(i in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span><span style="color:#a6e22e">length</span>(stock)) {
+		<span style="color:#a6e22e">tryCatch</span>(
+			{
+				url <span style="color:#f92672">&lt;-</span> <span style="color:#e6db74">&#34;https://finance.yahoo.com/quote/&#34;</span>
+				url <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste0</span>(url,stock[i],<span style="color:#e6db74">&#34;/financials?p=&#34;</span>,stock[i])
+				wahis.session <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">html_session</span>(url)
+				p <span style="color:#f92672">&lt;-</span>    wahis.session <span style="color:#f92672">%&gt;%</span>
+					<span style="color:#a6e22e">html_nodes</span>(xpath <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;//*[@id=&#34;Col1-1-Financials-Proxy&#34;]/section/div[3]/table&#39;</span>)<span style="color:#f92672">%&gt;%</span>
+					<span style="color:#a6e22e">html_table</span>(fill <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>)
+				IS <span style="color:#f92672">&lt;-</span> p[[1]]
+				<span style="color:#a6e22e">colnames</span>(IS) <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste</span>(IS[1,])
+				IS <span style="color:#f92672">&lt;-</span> IS[<span style="color:#f92672">-</span><span style="color:#a6e22e">c</span>(<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">5</span>,<span style="color:#ae81ff">12</span>,<span style="color:#ae81ff">20</span>,<span style="color:#ae81ff">25</span>),]
+				names_row <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste</span>(IS[,<span style="color:#ae81ff">1</span>])
+				IS <span style="color:#f92672">&lt;-</span> IS[,<span style="color:#ae81ff">-1</span>]
+				IS <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">apply</span>(IS,<span style="color:#ae81ff">2</span>,<span style="color:#a6e22e">function</span>(x){<span style="color:#a6e22e">gsub</span>(<span style="color:#e6db74">&#34;,&#34;</span>,<span style="color:#e6db74">&#34;&#34;</span>,x)})
+				IS <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">as.data.frame</span>(<span style="color:#a6e22e">apply</span>(IS,<span style="color:#ae81ff">2</span>,as.numeric))
+				<span style="color:#a6e22e">rownames</span>(IS) <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste</span>(names_row)
+				temp1 <span style="color:#f92672">&lt;-</span> IS
+				url <span style="color:#f92672">&lt;-</span> <span style="color:#e6db74">&#34;https://finance.yahoo.com/quote/&#34;</span>
+				url <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste0</span>(url,stock[i],<span style="color:#e6db74">&#34;/balance-sheet?p=&#34;</span>,stock[i])
+				wahis.session <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">html_session</span>(url)
+				p <span style="color:#f92672">&lt;-</span>    wahis.session <span style="color:#f92672">%&gt;%</span>
+					<span style="color:#a6e22e">html_nodes</span>(xpath <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;//*[@id=&#34;Col1-1-Financials-Proxy&#34;]/section/div[3]/table&#39;</span>)<span style="color:#f92672">%&gt;%</span>
+					<span style="color:#a6e22e">html_table</span>(fill <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>)
+				BS <span style="color:#f92672">&lt;-</span> p[[1]]
+				<span style="color:#a6e22e">colnames</span>(BS) <span style="color:#f92672">&lt;-</span> BS[1,]
+				BS <span style="color:#f92672">&lt;-</span> BS[<span style="color:#f92672">-</span><span style="color:#a6e22e">c</span>(<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">2</span>,<span style="color:#ae81ff">17</span>,<span style="color:#ae81ff">28</span>),]
+				names_row <span style="color:#f92672">&lt;-</span> BS[,<span style="color:#ae81ff">1</span>]
+				BS <span style="color:#f92672">&lt;-</span> BS[,<span style="color:#ae81ff">-1</span>]
+				BS <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">apply</span>(BS,<span style="color:#ae81ff">2</span>,<span style="color:#a6e22e">function</span>(x){<span style="color:#a6e22e">gsub</span>(<span style="color:#e6db74">&#34;,&#34;</span>,<span style="color:#e6db74">&#34;&#34;</span>,x)})
+				BS <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">as.data.frame</span>(<span style="color:#a6e22e">apply</span>(BS,<span style="color:#ae81ff">2</span>,as.numeric))
+				<span style="color:#a6e22e">rownames</span>(BS) <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste</span>(names_row)
+				temp2 <span style="color:#f92672">&lt;-</span> BS
+				url <span style="color:#f92672">&lt;-</span> <span style="color:#e6db74">&#34;https://finance.yahoo.com/quote/&#34;</span>
+				url <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste0</span>(url,stock[i],<span style="color:#e6db74">&#34;/cash-flow?p=&#34;</span>,stock[i])
+				wahis.session <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">html_session</span>(url)
+				p <span style="color:#f92672">&lt;-</span>    wahis.session <span style="color:#f92672">%&gt;%</span>
+					<span style="color:#a6e22e">html_nodes</span>(xpath <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;//*[@id=&#34;Col1-1-Financials-Proxy&#34;]/section/div[3]/table&#39;</span>)<span style="color:#f92672">%&gt;%</span>
+					<span style="color:#a6e22e">html_table</span>(fill <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>)
+				CF <span style="color:#f92672">&lt;-</span> p[[1]]
+				<span style="color:#a6e22e">colnames</span>(CF) <span style="color:#f92672">&lt;-</span> CF[1,]
+				CF <span style="color:#f92672">&lt;-</span> CF[<span style="color:#f92672">-</span><span style="color:#a6e22e">c</span>(<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">3</span>,<span style="color:#ae81ff">11</span>,<span style="color:#ae81ff">16</span>),]
+				names_row <span style="color:#f92672">&lt;-</span> CF[,<span style="color:#ae81ff">1</span>]
+				CF <span style="color:#f92672">&lt;-</span> CF[,<span style="color:#ae81ff">-1</span>]
+				CF <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">apply</span>(CF,<span style="color:#ae81ff">2</span>,<span style="color:#a6e22e">function</span>(x){<span style="color:#a6e22e">gsub</span>(<span style="color:#e6db74">&#34;,&#34;</span>,<span style="color:#e6db74">&#34;&#34;</span>,x)})
+				CF <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">as.data.frame</span>(<span style="color:#a6e22e">apply</span>(CF,<span style="color:#ae81ff">2</span>,as.numeric))
+				<span style="color:#a6e22e">rownames</span>(CF) <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste</span>(names_row)
+				temp3 <span style="color:#f92672">&lt;-</span> CF
+				<span style="color:#75715e">#assign(paste0(stock[i],&#39;.f&#39;),value = list(IS = temp1,BS = temp2,CF = temp3),envir = parent.frame())</span>
+				total_df <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">as.data.frame</span>(<span style="color:#a6e22e">rbind</span>(temp1,temp2,temp3))
+				total_df<span style="color:#f92672">$</span>value <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">rownames</span>(total_df)
+				<span style="color:#a6e22e">for</span>(k in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span><span style="color:#a6e22e">length</span>(total_df<span style="color:#f92672">$</span>value)) total_df<span style="color:#f92672">$</span>value[[k]] <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">gsub</span>(<span style="color:#e6db74">&#34; &#34;</span>, <span style="color:#e6db74">&#34;&#34;</span>,total_df<span style="color:#f92672">$</span>value[[k]])
+				financial_camps <span style="color:#f92672">&lt;-</span> total_df<span style="color:#f92672">$</span>value
+				df <span style="color:#f92672">&lt;-</span> total_df <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">t</span>()
+				df <span style="color:#f92672">&lt;-</span> df[<span style="color:#f92672">!</span><span style="color:#a6e22e">rownames</span>(df) <span style="color:#f92672">%in%</span> <span style="color:#a6e22e">c</span>(<span style="color:#e6db74">&#34;value&#34;</span>),]
+				dates <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">rownames</span>(df)
+				df <span style="color:#f92672">&lt;-</span> df <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">data.table</span>()
+				<span style="color:#a6e22e">colnames</span>(df) <span style="color:#f92672">&lt;-</span> financial_camps
+				df<span style="color:#f92672">$</span>date <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">mdy</span>(dates)
+				df<span style="color:#f92672">$</span>firm <span style="color:#f92672">&lt;-</span> stock[[i]]
+			},
+			error <span style="color:#f92672">=</span> <span style="color:#a6e22e">function</span>(cond){
+				<span style="color:#a6e22e">message</span>(stock[i], <span style="color:#e6db74">&#34;Give error &#34;</span>,cond)
+			}
+		)
+		df<span style="color:#a6e22e">[is.na</span>(df)] <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0</span>
+		output <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">rbind</span>(output, df)
+	}
+	<span style="color:#a6e22e">return</span>(output)
+}
+</code></pre></div><p>I know it looks messy, but it outputs all the financial statements available in Yahoo Finance for almost every ticker you input and it processes the data to yield it <a href="https://vita.had.co.nz/papers/tidy-data.pdf">tidy</a>.</p>
+<p>Anagolously, we want to get the historical prices of each company.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">getPrices <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(tickers, from <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;1950-01-01&#34;</span>){
+	stock_prices <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">new.env</span>()
+	<span style="color:#a6e22e">getSymbols</span>(tickers, src <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;yahoo&#34;</span>, from <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;1950-01-01&#34;</span>, auto.assign <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>, env <span style="color:#f92672">=</span> stock_prices)
+
+	all_prices <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">tibble</span>()
+
+	<span style="color:#a6e22e">for</span>(i in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span><span style="color:#a6e22e">length</span>(tickers)){
+		raw_df <span style="color:#f92672">&lt;-</span> stock_prices[[tickers[[i]]]][,<span style="color:#ae81ff">6</span>] <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">data.frame</span>()
+		dates <span style="color:#f92672">&lt;-</span> raw_df <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">row.names</span>() <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">as.Date</span>()
+		prices <span style="color:#f92672">&lt;-</span> raw_df[,<span style="color:#ae81ff">1</span>]
+
+		new_df <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">data.frame</span>(price <span style="color:#f92672">=</span> <span style="color:#a6e22e">as.numeric</span>(prices), date <span style="color:#f92672">=</span> dates) <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">data.table</span>()
+
+		new_df<span style="color:#f92672">$</span>firm <span style="color:#f92672">&lt;-</span> tickers[[i]]
+
+		all_prices <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">rbind</span>(all_prices,new_df)
+	}
+	<span style="color:#a6e22e">return</span>(all_prices)
+}
+</code></pre></div><p>Now we need to combine these two big sets. The financial data and the price history. The way I managed to put them together is not the most memory efficient, but it tries to avoid time-dependent biases. Let me show it.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">getMerge <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(prices, financials){
+
+	<span style="color:#75715e"># Get common days</span>
+	k <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">1</span>
+	absences <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">which</span>(<span style="color:#f92672">!</span>(financials<span style="color:#f92672">$</span>date <span style="color:#f92672">%in%</span> prices<span style="color:#f92672">$</span>date))
+	<span style="color:#a6e22e">while</span>(<span style="color:#a6e22e">sum</span>(<span style="color:#f92672">!</span>(<span style="color:#a6e22e">unique</span>(financials<span style="color:#f92672">$</span>date) <span style="color:#f92672">%in%</span> <span style="color:#a6e22e">unique</span>(prices<span style="color:#f92672">$</span>date))) <span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">0</span>){
+		count <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sum</span>(<span style="color:#f92672">!</span>(<span style="color:#a6e22e">unique</span>(financials<span style="color:#f92672">$</span>date) <span style="color:#f92672">%in%</span> <span style="color:#a6e22e">unique</span>(prices<span style="color:#f92672">$</span>date)))
+		financials<span style="color:#f92672">$</span>date[[absences[k]]] <span style="color:#f92672">&lt;-</span> financials<span style="color:#f92672">$</span>date[[absences[k]]] <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>
+		<span style="color:#a6e22e">if</span>(<span style="color:#a6e22e">sum</span>(<span style="color:#f92672">!</span>(<span style="color:#a6e22e">unique</span>(financials<span style="color:#f92672">$</span>date) <span style="color:#f92672">%in%</span> <span style="color:#a6e22e">unique</span>(prices<span style="color:#f92672">$</span>date))) <span style="color:#f92672">&lt;</span> count) k <span style="color:#f92672">&lt;-</span> k <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>
+	}
+
+	stocks <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">unique</span>(prices<span style="color:#f92672">$</span>firm)
+	tidy_merged <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">tibble</span>()
+	merged <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">left_join</span>(prices,financials, by <span style="color:#f92672">=</span> <span style="color:#a6e22e">c</span>(<span style="color:#e6db74">&#34;date&#34;</span>, <span style="color:#e6db74">&#34;firm&#34;</span>))
+	<span style="color:#a6e22e">for</span>(s in stocks){
+		df <span style="color:#f92672">&lt;-</span> merged <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">filter</span>(firm <span style="color:#f92672">==</span> s)
+		tidy_merged <span style="color:#f92672">&lt;-</span> df <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">na.locf</span>() <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">na.omit</span>() <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">distinct</span>() <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">as_tibble</span>() <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">rbind</span>(tidy_merged)
+	}
+
+	tidy_merged<span style="color:#f92672">$</span>date <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">as.Date</span>(tidy_merged<span style="color:#f92672">$</span>date)
+	tidy_merged<span style="color:#f92672">$</span>firm <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">as.factor</span>(tidy_merged<span style="color:#f92672">$</span>firm)
+	cols <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">colnames</span>(tidy_merged)
+	<span style="color:#a6e22e">for</span>(c in cols) <span style="color:#a6e22e">if</span>(<span style="color:#a6e22e">is.character</span>(tidy_merged[[c]])) tidy_merged[[c]] <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">as.numeric</span>(tidy_merged[[c]])
+
+	tidy_merged <span style="color:#f92672">&lt;-</span> tidy_merged <span style="color:#f92672">%&gt;%</span>  <span style="color:#a6e22e">distinct</span>()
+
+	<span style="color:#a6e22e">return</span>(tidy_merged)
+}
+</code></pre></div><p>The thing is that we want to simulate what a normal decision making would be. That means that you wake up today, run the code and can see the price closed tomorrow and the last financial statements published. And most of the time tomorrow the price would have changed but not the financial statements.</p>
+<table>
+<thead>
+<tr>
+<th>price</th>
+<th>date</th>
+<th>firm</th>
+<th>TotalRevenue</th>
+<th>CostofRevenue</th>
+<th>GrossProfit</th>
+<th>ResearchDevelopment</th>
+<th>SellingGeneralandAdministrative</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>16.11</td>
+<td>2015-06-01</td>
+<td>ANGO</td>
+<td>352392</td>
+<td>180738</td>
+<td>171654</td>
+<td>26594</td>
+<td>112382</td>
+</tr>
+<tr>
+<td>16.08</td>
+<td>2015-06-02</td>
+<td>ANGO</td>
+<td>352392</td>
+<td>180738</td>
+<td>171654</td>
+<td>26594</td>
+<td>112382</td>
+</tr>
+<tr>
+<td>16.39</td>
+<td>2015-06-03</td>
+<td>ANGO</td>
+<td>352392</td>
+<td>180738</td>
+<td>171654</td>
+<td>26594</td>
+<td>112382</td>
+</tr>
+<tr>
+<td>16.07</td>
+<td>2015-06-04</td>
+<td>ANGO</td>
+<td>352392</td>
+<td>180738</td>
+<td>171654</td>
+<td>26594</td>
+<td>112382</td>
+</tr>
+<tr>
+<td>16.26</td>
+<td>2015-06-05</td>
+<td>ANGO</td>
+<td>352392</td>
+<td>180738</td>
+<td>171654</td>
+<td>26594</td>
+<td>112382</td>
+</tr>
+<tr>
+<td>16.1</td>
+<td>2015-06-08</td>
+<td>ANGO</td>
+<td>352392</td>
+<td>180738</td>
+<td>171654</td>
+<td>26594</td>
+<td>112382</td>
+</tr>
+</tbody>
+</table>
+<p>So this table gives you a glimpse of how the database looks like.</p>
+<p>Now we have all custom functions that we need to retrieve and store all the data that we are going to need. As you might have supsected already, this is <em>a lot</em> of data. It blows up the RAM of my laptop and most certainly will do the same with yours. In order to avoid that I just decided to create a folder and save all the data in multiple files, so we&rsquo;ll load one at a time when needed.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">tickers <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">getTickers</span>(index <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;all&#34;</span>)
+
+pb <span style="color:#f92672">&lt;-</span> progress_bar<span style="color:#f92672">$</span><span style="color:#a6e22e">new</span>(total <span style="color:#f92672">=</span> <span style="color:#a6e22e">length</span>(tickers))
+
+<span style="color:#a6e22e">for</span>(t in tickers){
+	<span style="color:#a6e22e">tryCatch</span>({
+		fins <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">getFinancials</span>(t)
+		prices <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">getPrices</span>(t)
+		whole_data <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">getMerge</span>(financials <span style="color:#f92672">=</span> fins, prices <span style="color:#f92672">=</span> prices)
+		path <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste0</span>(<span style="color:#e6db74">&#34;data/&#34;</span>,t)
+		<span style="color:#a6e22e">write_feather</span>(whole_data,path)
+	}, error<span style="color:#f92672">=</span><span style="color:#a6e22e">function</span>(e){})
+
+	pb<span style="color:#f92672">$</span><span style="color:#a6e22e">tick</span>()
+}
+</code></pre></div><h1 id="defining-investment-strategies">Defining Investment Strategies</h1>
+<p>The broad investment strategy that I have defined for this test is the following: At the beginning of each month, an investor saves up some fixed amount of money and invests it in stocks. Which stocks will be decided based upon different more specific strategies that will be tested, but this is the general scheme.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">invest <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(method, data, date, amount_to_invest <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>, stocks_owned, specificity <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>){
+	d <span style="color:#f92672">&lt;-</span> date
+	stocks_available <span style="color:#f92672">&lt;-</span> data <span style="color:#f92672">%&gt;%</span>
+											<span style="color:#a6e22e">filter</span>(date <span style="color:#f92672">==</span> d) <span style="color:#f92672">%&gt;%</span>
+											.$firm <span style="color:#f92672">%&gt;%</span>
+											<span style="color:#a6e22e">unique</span>() <span style="color:#f92672">%&gt;%</span>
+											<span style="color:#a6e22e">as.character</span>()
+</code></pre></div><p>See that I have pasted a snippet of code that is an unclosed function. Is not a mistake, I will disclose the rest of the function very soon in many snippets for readability. Note that $specifitiy = 1$ and that it appears everywhere. I&rsquo;ll explain that later.</p>
+<h2 id="benchmark-random-selection">Benchmark: Random Selection</h2>
+<p>The more straightforwarad strategy that we could think of is the random selection. The investor just takes a random ticker from the list of available companies and invests all the money from this month into that stock. Simple as that.</p>
+<p>This is going to serve as a benchmark. It is a quite dumb one, but any strategy that is not entirely useless musts outperform this strategy. What kind of financial strategy would be one that performs as well as blindly picking stocks out of the index?</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">	<span style="color:#a6e22e">if</span>(method <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;random&#34;</span>){
+		selected_stock <span style="color:#f92672">&lt;-</span> stocks_available <span style="color:#f92672">%&gt;%</span>
+		<span style="color:#a6e22e">sample</span>(specificity, replace <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>)
+	}
+</code></pre></div><h2 id="price-earnings-ratio-per">Price Earnings Ratio (PER)</h2>
+<p>Both praised and demonized, the PER is one of the most famous financial ratios that is studied in the stock market. This metric tells you how many years you should wait to recover your investment in case you would be getting paid the proportional revenue of the company.</p>
+<p><!-- raw HTML omitted --><!-- raw HTML omitted --><!-- raw HTML omitted --></p>
+<p>It sounds kind of logic that the price of a stock should correlate with its capacitity of generating revenue. What it is a company if not a machine that inputs some money and outputs even more money? Therefore, it does not seem crazy to evaluate the <em>fair value</em> of a company based on its revenue. However, there is a lot of controversy on whether this ratio is useful or not for fundamental analysis. Amongst other things, some people claim that the revenue of a company is one of the metrics that can be more easily manipulated and hence we shouldn&rsquo;t rely any decision based on them.</p>
+<p>Considering all of that, I though it was worth testing it in our little experiment.</p>
+<p>How will we do test it? Well, it is kind of common sense in investment environments to label companies as <em>expensive</em> if they have a high PER and as <em>cheap</em> if they have a low one. Following that logic, you should buy companies with lower PER, because they are cheaper. Therefore, each month in our experiment we will sort the stock universe by its present PER in ascending order and we will invest our monthly money into the top of the list. This way we will always invest in the cheapest companies available. No more considerations.</p>
+<p>I know this is trategy is utterly simplistic and that we can not base all our fundamental-analysis-oriented stock picking in one single metric. But if this ratio holds some slight truth in its statements, it should be at least better than randomly choosing stocks. Otherwise this ratio is not giving us any useful information <em>whatsoever</em>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">	<span style="color:#a6e22e">if</span>(method <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;per&#34;</span>){
+		selected_stock <span style="color:#f92672">&lt;-</span> data <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">filter</span>(date <span style="color:#f92672">==</span> d) <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">filter</span>(firm <span style="color:#f92672">%in%</span> stocks_available) <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">mutate</span>(per <span style="color:#f92672">=</span> price<span style="color:#f92672">*</span>CommonStock<span style="color:#f92672">/</span>TotalRevenue) <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">top_n</span>(specificity, <span style="color:#f92672">-</span>per) <span style="color:#f92672">%&gt;%</span>
+			.$firm <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">unique</span>() <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">as.character</span>()
+	}
+</code></pre></div><h2 id="enterprise-value-over-earnings-before-intereses-taxes-depreciation-and-amortization-evebitda">Enterprise Value over Earnings Before Intereses, Taxes, Depreciation and Amortization (EV/EBITDA)</h2>
+<p>The natural evolution of the PER is the EV/EBITDA, for <em>Enterprise Value over Earnings Before Intereses Taxes Depreciation and Amortization</em>. It kind of measures the same thing but in a smarter more sophisticated way. It avoids using the revenue metrics - as they are less reliable - and it takes into account more metrics to compute the Enterprise Value than simply the Price. The formula would be like this:</p>
+<p><!-- raw HTML omitted --><!-- raw HTML omitted --><!-- raw HTML omitted --></p>
+<p>Lately, it has become the new preference for simplistic fundamental analysis in order to label companies as &ldquo;cheap&rdquo; or &ldquo;expensive&rdquo;.</p>
+<p>Analogously to the PER, in this strategy we will sort the list of companies based on their present EV/EBITDA in ascending order, using the latest financial statements and &ldquo;<em>today&rsquo;s</em>&rdquo; price, at the beginning of each month. Then we just pick the top of the list as our chosen stock for this month&rsquo;s investment.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">		selected_stock <span style="color:#f92672">&lt;-</span> data <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">filter</span>(date <span style="color:#f92672">==</span> d) <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">filter</span>(firm <span style="color:#f92672">%in%</span> stocks_available) <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">mutate</span>(evebitda <span style="color:#f92672">=</span> (EarningsBeforeInterestandTaxes)<span style="color:#f92672">/</span>(price<span style="color:#f92672">*</span>CommonStock <span style="color:#f92672">+</span> PreferredStock <span style="color:#f92672">+</span> MinorityInterest <span style="color:#f92672">+</span> LongTermDebt <span style="color:#f92672">-</span> CashAndCashEquivalents)) <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">top_n</span>(specificity, evebitda) <span style="color:#f92672">%&gt;%</span>
+			.$firm <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">unique</span>() <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">as.character</span>()
+</code></pre></div><h2 id="dividends-paid-over-enterprise-value">Dividends Paid over Enterprise Value</h2>
+<p>This strategy diverges a bit from the philosophy of the other two. It is the conclusion of framing the expected returns from the investments as what you get paid from being the owner of a stock (dividents) instead of the return that you can get if you sell your stocks in the future. I&rsquo;m not saying that this strategy won&rsquo;t compute the increase in the owned stocks as a profit, but that the decision making of picking the stock is based more on that expectetions of the dividends and less in trying to forecast the future price of the stock. Is another way of stating that, acknowledging that I won&rsquo;t see the Earnings of the company, the only earnings that I consider are the revenues that the company directly yields me. i.e. the <em>Dividends</em>.</p>
+<p>Having said that, we could think as &ldquo;cheap&rdquo; a company that gives you a lot of dividends for a very small price. And we have already established a sophisticated way of computing the &ldquo;price&rdquo; of a company. So we can compute this ratio</p>
+<p><!-- raw HTML omitted --><!-- raw HTML omitted --><!-- raw HTML omitted --></p>
+<p>and simply say that the larger this number is, the better. Therefore, we do the same as always, we compute this number at the beginning of each and every month, we sort the list of companies based on this number in dreceasing order and we pick the top of the list.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">	<span style="color:#a6e22e">if</span>(method <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;dividends_ev&#34;</span>){
+		selected_stock <span style="color:#f92672">&lt;-</span> data <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">filter</span>(date <span style="color:#f92672">==</span> d) <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">filter</span>(firm <span style="color:#f92672">%in%</span> stocks_available) <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">mutate</span>(dividends_ev <span style="color:#f92672">=</span> (DividendsPaid)<span style="color:#f92672">/</span>(price<span style="color:#f92672">*</span>CommonStock <span style="color:#f92672">+</span> PreferredStock <span style="color:#f92672">+</span> MinorityInterest <span style="color:#f92672">+</span> LongTermDebt <span style="color:#f92672">-</span> CashAndCashEquivalents)) <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">top_n</span>(specificity, dividends_ev) <span style="color:#f92672">%&gt;%</span>
+			.$firm <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">unique</span>() <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">as.character</span>()
+	}
+</code></pre></div><h2 id="combined-dividends-and-ebitda">Combined Dividends and EBITDA</h2>
+<p>Since we&rsquo;ve got explained some quite convincing ideas, I thought that would be interesting to put them together in one combined strategy that I call <em>Dividends and Revenues</em>, for lack of a better name.</p>
+<p>The formula would be the following:</p>
+<p><!-- raw HTML omitted --><!-- raw HTML omitted --><!-- raw HTML omitted --></p>
+<p>Note that since we&rsquo;ll decide based on a ranking, this combined metric does not depend so much on scale, and it takes into account both Dividends and Revenues equally.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">	<span style="color:#a6e22e">if</span>(method <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;div_and_rev&#34;</span>){
+		selected_stock <span style="color:#f92672">&lt;-</span> data <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">filter</span>(date <span style="color:#f92672">==</span> d) <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">filter</span>(firm <span style="color:#f92672">%in%</span> stocks_available) <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">mutate</span>(div_and_rev <span style="color:#f92672">=</span> (EarningsBeforeInterestandTaxes)<span style="color:#f92672">*</span>(DividendsPaid)<span style="color:#f92672">/</span>(price<span style="color:#f92672">*</span>CommonStock <span style="color:#f92672">+</span> PreferredStock <span style="color:#f92672">+</span> MinorityInterest <span style="color:#f92672">+</span> LongTermDebt <span style="color:#f92672">-</span> CashAndCashEquivalents)) <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">top_n</span>(specificity, div_and_rev) <span style="color:#f92672">%&gt;%</span>
+			.$firm <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">unique</span>() <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">as.character</span>()
+	}
+</code></pre></div><h1 id="investment-simulation--results">Investment Simulation &amp; Results</h1>
+<p>Remember that variable called <code>specificity</code>? From our strategy-guided sorted list of stickers that we had, we chose the top of the list. How many of that top is what <code>specificity</code> states. It is kind of risky picking just one company out of 1500, and it is a parameter that can be interesting to study on its own.</p>
+<p>I warn you that this section is going to get a bit messy. I&rsquo;ll just paste huge bunches of code that are not so easy to read because I&rsquo;ve prioritized memory efficiency and speed. So be patient or skip it and go directly to the explanation below each one</p>
+<p>Now that you are warned, here we go:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">
+simulate_multiple_strategies <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(data, amount_to_invest <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>, specificity <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>, strategies){
+
+	count_strategy <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0</span>
+
+	history_value <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>()
+	history_strategies <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>()
+	history_dates <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>()
+
+	dates <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">unique</span>(data<span style="color:#f92672">$</span>date) <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">sort</span>()
+	dates_array <span style="color:#f92672">&lt;-</span> data<span style="color:#f92672">$</span>date
+	prices_array <span style="color:#f92672">&lt;-</span> data<span style="color:#f92672">$</span>price
+	firms_array <span style="color:#f92672">&lt;-</span> data<span style="color:#f92672">$</span>firm
+	portfolio <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">tibble</span>()
+	stocks_owned <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">list</span>()
+
+	pb <span style="color:#f92672">&lt;-</span> progress_bar<span style="color:#f92672">$</span><span style="color:#a6e22e">new</span>(
+		format <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;(:spin) [:bar] :percent     eta: :eta&#34;</span>,
+		total <span style="color:#f92672">=</span> <span style="color:#a6e22e">length</span>(dates), clear <span style="color:#f92672">=</span> <span style="color:#66d9ef">FALSE</span>, width <span style="color:#f92672">=</span> <span style="color:#ae81ff">60</span>)
+
+	<span style="color:#a6e22e">for</span>(s in strategies) stocks_owned[[s]] <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">list</span>()
+
+	<span style="color:#a6e22e">for</span>(i in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span><span style="color:#a6e22e">length</span>(dates)){
+		pb<span style="color:#f92672">$</span><span style="color:#a6e22e">tick</span>()
+		d <span style="color:#f92672">&lt;-</span> dates[[i]]
+
+		pos_date <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">which</span>(dates_array <span style="color:#f92672">==</span> d)
+
+		today_price <span style="color:#f92672">&lt;-</span> prices_array[pos_date] <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">as.numeric</span>()
+		today_firm <span style="color:#f92672">&lt;-</span> firms_array[pos_date] <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">as.character</span>()
+
+		<span style="color:#a6e22e">for</span>(strategy <span style="color:#a6e22e">in </span>(strategies)){
+
+			<span style="color:#75715e"># Invest first day of each month</span>
+			<span style="color:#a6e22e">if</span>(<span style="color:#f92672">!</span>(<span style="color:#a6e22e">class</span>(<span style="color:#a6e22e">try</span>(dates[[i<span style="color:#ae81ff">-1</span>]], silent <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>)) <span style="color:#f92672">==</span> <span style="color:#e6db74">&#39;try-error&#39;</span>)){
+				<span style="color:#a6e22e">if</span>(<span style="color:#a6e22e">day</span>(dates[[i]]) <span style="color:#f92672">&lt;</span> <span style="color:#a6e22e">day</span>(dates[[i<span style="color:#ae81ff">-1</span>]])){
+					stocks_owned[[strategy]] <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">invest</span>(method <span style="color:#f92672">=</span> strategy, data <span style="color:#f92672">=</span> data, date <span style="color:#f92672">=</span> d, amount_to_invest <span style="color:#f92672">=</span> amount_to_invest, stocks_owned <span style="color:#f92672">=</span> stocks_owned[[strategy]], specificity <span style="color:#f92672">=</span> specificity)
+				}
+			}else{
+				stocks_owned[[strategy]] <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">invest</span>(method <span style="color:#f92672">=</span> strategy, data <span style="color:#f92672">=</span> data, date <span style="color:#f92672">=</span> d, amount_to_invest <span style="color:#f92672">=</span> amount_to_invest, stocks_owned <span style="color:#f92672">=</span> stocks_owned[[strategy]], specificity <span style="color:#f92672">=</span> specificity)
+			}
+
+			<span style="color:#75715e"># Compute Portfolio value</span>
+			tmp_value <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0</span>
+			tmp_benchmark <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0</span>
+
+			stocks <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">names</span>(stocks_owned[[strategy]])
+			<span style="color:#a6e22e">for</span>(n in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span><span style="color:#a6e22e">length</span>(stocks)){
+				st <span style="color:#f92672">&lt;-</span> stocks[[n]]
+				pos_firm <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">which</span>(firms_array <span style="color:#f92672">==</span> st)
+				today_price <span style="color:#f92672">&lt;-</span> prices_array<span style="color:#a6e22e">[intersect</span>(pos_date, pos_firm)]
+				tmp_value <span style="color:#f92672">&lt;-</span> tmp_value <span style="color:#f92672">+</span> <span style="color:#a6e22e">sum</span>(stocks_owned[[strategy]][[st]]<span style="color:#f92672">*</span>today_price)
+			}
+
+		history_value[[i <span style="color:#f92672">+</span> count_strategy]] <span style="color:#f92672">&lt;-</span> tmp_value
+		history_strategies[[i <span style="color:#f92672">+</span> count_strategy]] <span style="color:#f92672">&lt;-</span> strategy
+		history_dates[[i <span style="color:#f92672">+</span> count_strategy]] <span style="color:#f92672">&lt;-</span> d
+		count_strategy <span style="color:#f92672">&lt;-</span> count_strategy <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>
+		}
+	}
+	results <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">data.table</span>(value <span style="color:#f92672">=</span> history_value,
+										strategy <span style="color:#f92672">=</span> history_strategies,
+										date <span style="color:#f92672">=</span> <span style="color:#a6e22e">as.Date</span>(history_dates)) <span style="color:#f92672">%&gt;%</span>
+		<span style="color:#a6e22e">na.omit</span>()
+
+	<span style="color:#a6e22e">return</span>(<span style="color:#a6e22e">list</span>(results <span style="color:#f92672">=</span> results, portfolio <span style="color:#f92672">=</span> stocks_owned))
+}
+</code></pre></div><p>Long story short, this code implements many strategies and stores the value of their simulated portfolios in a daily basis. This way we&rsquo;ve got the whole daily time evolution of the value of each strategy from the beginning.</p>
+<p>Now, since we want to be memmory efficient, we just load a random subset of the universe of available stocks. Instead of 1500, we take 100, we set a specificity of 25 and compute the simulation</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">n_stocks <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">100</span>
+specificity <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">25</span>
+
+strategies_list <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>(<span style="color:#e6db74">&#34;random&#34;</span>, <span style="color:#e6db74">&#34;per&#34;</span>, <span style="color:#e6db74">&#34;evebitda&#34;</span>, <span style="color:#e6db74">&#34;dividends_ev&#34;</span>, <span style="color:#e6db74">&#34;div_and_rev&#34;</span>)
+
+
+	stocks_universe <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">getTickers</span>(<span style="color:#e6db74">&#34;all&#34;</span>) <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">sample</span>(n_stocks) <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">intersect</span>(<span style="color:#a6e22e">list.files</span>(<span style="color:#e6db74">&#34;data/&#34;</span>))
+	files <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste0</span>(<span style="color:#e6db74">&#34;data/&#34;</span>,stocks_universe)
+	dt <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">rbindlist</span>(<span style="color:#a6e22e">lapply</span>(files, read_feather)) <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">filter</span>(price <span style="color:#f92672">&gt;=</span> <span style="color:#ae81ff">0.1</span>) <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">data.table</span>()
+	investment <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">simulate_multiple_strategies_fasto</span>(data <span style="color:#f92672">=</span> dt,
+																									 amount_to_invest <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>,
+																									 strategies <span style="color:#f92672">=</span> strategies_list,
+																									 specificity <span style="color:#f92672">=</span> specificity)
+
+</code></pre></div><p>And plot the results:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">investment<span style="color:#f92672">$</span>result <span style="color:#f92672">%&gt;%</span>
+	<span style="color:#a6e22e">ggplot</span>(<span style="color:#a6e22e">aes</span>(x <span style="color:#f92672">=</span> date, y <span style="color:#f92672">=</span> value, colour <span style="color:#f92672">=</span> strategy)) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">geom_line</span>(size <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">theme_minimal</span>() <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">scale_colour_hp</span>(discrete <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>, house <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;ravenclaw&#34;</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">ylab</span>(<span style="color:#e6db74">&#34;Value&#34;</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">xlab</span>(<span style="color:#e6db74">&#34;&#34;</span>)
+</code></pre></div><!-- raw HTML omitted -->
+<p>I know, I know. We are just taking a random subset of 100 companies instead of those juicy 1500. And the results obtained from here could be utterly different if we repeat the experiment for a different 100 companies.</p>
+<p>In order to address that, we can simply iterate that process with new randomly selected universe of stocks every time and compute the difference in the yearly return of each simulation.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">
+<span style="color:#75715e"># Compute Internal Rate of Return</span>
+irr <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(cash_flows, frequency <span style="color:#f92672">=</span> <span style="color:#ae81ff">30.5</span>, error <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.01</span>){
+	l <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">length</span>(cash_flows)
+	cf_zero <span style="color:#f92672">&lt;-</span> cash_flows[[1]]
+	cf_final <span style="color:#f92672">&lt;-</span> cash_flows[[l]]
+	irr_bot <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">-100</span>
+	irr_top <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">100</span>
+	npv <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0</span>
+	<span style="color:#a6e22e">while</span>(<span style="color:#a6e22e">abs</span>(cf_final <span style="color:#f92672">-</span> npv) <span style="color:#f92672">&gt;</span> error){
+		npv <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0</span>
+		irr_trial <span style="color:#f92672">&lt;-</span> (irr_bot<span style="color:#f92672">+</span>irr_top)<span style="color:#f92672">/</span><span style="color:#ae81ff">2</span>
+		<span style="color:#a6e22e">for</span>(i in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>(<span style="color:#a6e22e">floor</span>(l<span style="color:#f92672">/</span>frequency))){
+			npv <span style="color:#f92672">&lt;-</span> npv <span style="color:#f92672">+</span> cf_zero<span style="color:#f92672">*</span>((<span style="color:#ae81ff">1</span> <span style="color:#f92672">+</span> irr_trial<span style="color:#f92672">/</span><span style="color:#ae81ff">100</span>)<span style="color:#a6e22e">^</span>(i))
+		}
+		<span style="color:#a6e22e">if</span>(cf_final <span style="color:#f92672">&gt;</span> npv) irr_bot <span style="color:#f92672">&lt;-</span> irr_trial
+		<span style="color:#a6e22e">if</span>(cf_final <span style="color:#f92672">&lt;</span> npv) irr_top <span style="color:#f92672">&lt;-</span> irr_trial
+	}
+	<span style="color:#a6e22e">return</span>(irr_trial<span style="color:#f92672">/</span><span style="color:#ae81ff">100</span>)
+}
+
+<span style="color:#75715e"># Compute relative Difference between the Return of the portfolio and the benchmark</span>
+alpha_ret <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(portfolio, benchmark){
+	r_port <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">irr</span>(portfolio)
+	r_ben <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">irr</span>(benchmark)
+	a <span style="color:#f92672">&lt;-</span> (r_port <span style="color:#f92672">-</span> r_ben)<span style="color:#f92672">/</span>(r_ben)
+	<span style="color:#a6e22e">return</span>(a)
+}
+
+<span style="color:#75715e"># Compute beta with the benchmark</span>
+beta <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(portfolio, benchmark){
+	<span style="color:#a6e22e">return</span>(<span style="color:#a6e22e">cov</span>(portfolio,benchmark<span style="color:#f92672">/</span><span style="color:#a6e22e">sd</span>(benchmark)^2))
+}
+
+<span style="color:#75715e"># Compute Jensen&#39;s alpha with the benchmark</span>
+alpha <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(portfolio, benchmark){
+	r_port <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">irr</span>(portfolio)
+	r_ben <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">irr</span>(benchmark)
+	a <span style="color:#f92672">&lt;-</span> (r_port <span style="color:#f92672">-</span> <span style="color:#a6e22e">beta</span>(portfolio, benchmark)<span style="color:#f92672">*</span>r_ben)
+	<span style="color:#a6e22e">return</span>(a)
+}
+
+trials <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">50</span>
+n_stocks <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">100</span>
+specificity <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">25</span>
+alpha_result <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">list</span>()
+diff_result <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">list</span>()
+
+strategies_list <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>(<span style="color:#e6db74">&#34;random&#34;</span>, <span style="color:#e6db74">&#34;per&#34;</span>, <span style="color:#e6db74">&#34;evebitda&#34;</span>, <span style="color:#e6db74">&#34;dividends_ev&#34;</span>, <span style="color:#e6db74">&#34;div_and_rev&#34;</span>)
+
+<span style="color:#a6e22e">for</span>(t in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>trials){
+
+	stocks_universe <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">getTickers</span>(<span style="color:#e6db74">&#34;all&#34;</span>) <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">sample</span>(n_stocks) <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">intersect</span>(<span style="color:#a6e22e">list.files</span>(<span style="color:#e6db74">&#34;data/&#34;</span>))
+	files <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste0</span>(<span style="color:#e6db74">&#34;data/&#34;</span>,stocks_universe)
+	dt <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">rbindlist</span>(<span style="color:#a6e22e">lapply</span>(files, read_feather)) <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">filter</span>(price <span style="color:#f92672">&gt;=</span> <span style="color:#ae81ff">0.1</span>) <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">data.table</span>()
+	investment <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">simulate_multiple_strategies_fasto</span>(data <span style="color:#f92672">=</span> dt, amount_to_invest <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>, strategies <span style="color:#f92672">=</span> strategies_list, specificity <span style="color:#f92672">=</span> specificity)
+
+	<span style="color:#a6e22e">for</span>(s in strategies_list) {
+		diff_result[[s]][[t]] <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">alpha_ret</span>(portfolio <span style="color:#f92672">=</span> investment[[<span style="color:#e6db74">&#34;results&#34;</span>]] <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">filter</span>(strategy <span style="color:#f92672">==</span> s) <span style="color:#f92672">%&gt;%</span> .$value,
+																	 benchmark <span style="color:#f92672">=</span> investment[[<span style="color:#e6db74">&#34;results&#34;</span>]] <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">filter</span>(strategy <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;random&#34;</span>) <span style="color:#f92672">%&gt;%</span> .$value
+		)
+	}
+}
+
+</code></pre></div><p>And plot the result like that</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">diff_result <span style="color:#f92672">%&gt;%</span>
+	<span style="color:#a6e22e">as_tibble</span>() <span style="color:#f92672">%&gt;%</span>
+	<span style="color:#a6e22e">melt</span>() <span style="color:#f92672">%&gt;%</span>
+	<span style="color:#a6e22e">ggplot</span>(<span style="color:#a6e22e">aes</span>(x <span style="color:#f92672">=</span> <span style="color:#a6e22e">as.factor</span>(variable), y <span style="color:#f92672">=</span> value)) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">geom_boxplot</span>(<span style="color:#a6e22e">aes</span>(fill <span style="color:#f92672">=</span> variable), colour <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;black&#34;</span>, alpha <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.35</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">geom_point</span>(<span style="color:#a6e22e">aes</span>(colour <span style="color:#f92672">=</span> variable), size <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">theme_minimal</span>() <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">xlab</span>(<span style="color:#e6db74">&#34;Strategy&#34;</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">ylab</span>(<span style="color:#e6db74">&#34;Returns Relative Difference&#34;</span>)<span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">scale_colour_hp</span>(discrete <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>, house <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;ravenclaw&#34;</span>, direction <span style="color:#f92672">=</span> <span style="color:#ae81ff">-1</span>, name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Strategy&#34;</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">scale_fill_hp</span>(discrete <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>, house <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;ravenclaw&#34;</span>, direction <span style="color:#f92672">=</span> <span style="color:#ae81ff">-1</span>, name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Strategy&#34;</span>)
+</code></pre></div><!-- raw HTML omitted -->
+<p>This plot shows the relative difference in the final yearly return between each strategy and the random. Obviously the random shows 0 difference with itself.</p>
+<p>It is common to argue that simply higher returns does not equal to a better strategy, and that we should take into account the relative risk with respect with the benchmark. Since we are using the random selection as benchmark, we can use it like that and compute the Jensen&rsquo;s Alpha for each strategy on every simulation (look the code above and note that this computation is hidden inside).</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">alpha_result <span style="color:#f92672">%&gt;%</span>
+	<span style="color:#a6e22e">as_tibble</span>() <span style="color:#f92672">%&gt;%</span>
+	<span style="color:#a6e22e">melt</span>() <span style="color:#f92672">%&gt;%</span>
+	<span style="color:#a6e22e">ggplot</span>(<span style="color:#a6e22e">aes</span>(x <span style="color:#f92672">=</span> <span style="color:#a6e22e">as.factor</span>(variable), y <span style="color:#f92672">=</span> value)) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">geom_boxplot</span>(<span style="color:#a6e22e">aes</span>(fill <span style="color:#f92672">=</span> variable), colour <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;black&#34;</span>, alpha <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.35</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">geom_point</span>(<span style="color:#a6e22e">aes</span>(colour <span style="color:#f92672">=</span> variable), size <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">theme_minimal</span>() <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">xlab</span>(<span style="color:#e6db74">&#34;Strategy&#34;</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">ylab</span>(<span style="color:#e6db74">&#34;Alpha&#34;</span>)<span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">scale_colour_hp</span>(discrete <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>, house <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;ravenclaw&#34;</span>, direction <span style="color:#f92672">=</span> <span style="color:#ae81ff">-1</span>, name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Strategy&#34;</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">scale_fill_hp</span>(discrete <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>, house <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;ravenclaw&#34;</span>, direction <span style="color:#f92672">=</span> <span style="color:#ae81ff">-1</span>, name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Strategy&#34;</span>)
+</code></pre></div><!-- raw HTML omitted -->
+<h1 id="conclusion--further-work">Conclusion &amp; Further Work</h1>
+<p>I don&rsquo;t want to start arguing about whether we should look at the relative difference or the alpha in order to decide the preferred strategy, I think there are better discussion on that that the one I can provide in this essay. Nevertheless, seems quite obvious that the strategies that we have used contain some truth in them, they can outperform a random selection. So using them could better than blind random selection. I&rsquo;m not sure if that is a big achievement, but it something; and can lead to further exploration of the utility of the metrics involved.</p>
+<p>There are some biases that we should be aware of. Some of those could trigger further exploration of what I&rsquo;ve done so far, trying to address them.</p>
+<ul>
+<li>
+<p>The most important one: Choosing the <code>specificity</code> parameter. The results can vary greatly if we change this parameter. Early exploration has shown me that if we set the specifity as 1, every strategy does not differ from the random, and we couldn&rsquo;t say that they add value. I most certainly will expand the article in the future exploring this issue.</p>
+</li>
+<li>
+<p>Universe of available stocks. We have chosen the lists of the standard and poors available <em>today</em>. This adds survivor bias, because we are only considering the companies that are in those lists nowadays, not back in 2014 or at every moment of the simulation. This is a problem because when we simulate being in 2014 with the information of 2014 we are not seeing the stocks that were in the lists of the SP back in 2014, but those that are present in the lists of 2018. We are using information of the future, and that is dangerous. I wouldn&rsquo;t say is a big deal, because in 4 years these lists don&rsquo;t change so much, but still.</p>
+</li>
+<li>
+<p>Time. 4 years is simply not enough to extract reliable conclusions. Even though our datasets look huge, 4 years in financial history is just a small glimpse. This time range does not include periods of crisis, bursting of bubbles or any other major financial distress. Moreover, long-term saving strategies are thought to be applied during periods of more than 10 years; so even though we are claiming to simulate a real humble investor, the results we are providing can not applied to that situation. The reason why we only have 4 years is because I haven&rsquo;t been able to retrieve older financial statements. I&rsquo;ll work on that.</p>
+</li>
+</ul>
+]]></content>
+        </item>
+        
+    </channel>
+</rss>

@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  
+  <url>
+    <loc>https://aljrico.com/</loc>
+    <lastmod>2020-06-07T00:00:00+00:00</lastmod>
+    <xhtml:link
+                rel="alternate"
+                hreflang="fr"
+                href="https://aljrico.com/fr/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://aljrico.com/"
+                />
+  </url>
+  
+  <url>
+    <loc>https://aljrico.com/posts/2020/06/efficient-column-looping-with-r/</loc>
+    <lastmod>2020-06-07T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://aljrico.com/posts/</loc>
+    <lastmod>2020-06-07T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://aljrico.com/tags/</loc>
+    <lastmod>2020-06-07T00:00:00+00:00</lastmod>
+    <xhtml:link
+                rel="alternate"
+                hreflang="fr"
+                href="https://aljrico.com/fr/tags/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://aljrico.com/tags/"
+                />
+  </url>
+  
+  <url>
+    <loc>https://aljrico.com/tags/untagged/</loc>
+    <lastmod>2020-06-07T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://aljrico.com/tags/library/</loc>
+    <lastmod>2018-11-29T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://aljrico.com/posts/2018/11/my-first-r-package-harrypotter/</loc>
+    <lastmod>2018-11-29T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://aljrico.com/tags/package/</loc>
+    <lastmod>2018-11-29T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://aljrico.com/tags/r/</loc>
+    <lastmod>2018-11-29T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://aljrico.com/posts/2018/09/genetic-algorithms-solving-the-n-queens-problem/</loc>
+    <lastmod>2018-09-06T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://aljrico.com/tags/optimisation-algorithms/</loc>
+    <lastmod>2018-09-06T00:00:00+00:00</lastmod>
+  </url>
+  
+  <url>
+    <loc>https://aljrico.com/about/</loc>
+  </url>
+  
+  <url>
+    <loc>https://aljrico.com/categories/blog/</loc>
+  </url>
+  
+  <url>
+    <loc>https://aljrico.com/categories/</loc>
+    <xhtml:link
+                rel="alternate"
+                hreflang="fr"
+                href="https://aljrico.com/fr/categories/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://aljrico.com/categories/"
+                />
+  </url>
+  
+  <url>
+    <loc>https://aljrico.com/projects/</loc>
+  </url>
+  
+  <url>
+    <loc>https://aljrico.com/series/</loc>
+    <xhtml:link
+                rel="alternate"
+                hreflang="fr"
+                href="https://aljrico.com/fr/series/"
+                />
+    <xhtml:link
+                rel="alternate"
+                hreflang="en"
+                href="https://aljrico.com/series/"
+                />
+  </url>
+  
+  <url>
+    <loc>https://aljrico.com/posts/1/01/testing-financial-strategies-with-r-stock-picking/</loc>
+  </url>
+  
+</urlset>

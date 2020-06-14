@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>blog on Alejandro J Rico</title>
+    <link>https://aljrico.com/categories/blog/</link>
+    <description>Recent content in blog on Alejandro J Rico</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <copyright>&lt;a href=&#34;https://creativecommons.org/licenses/by-nc/4.0/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;CC BY-NC 4.0&lt;/a&gt;</copyright>
+    
+	<atom:link href="https://aljrico.com/categories/blog/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Testing Financial Strategies with R: Stock Picking</title>
+      <link>https://aljrico.com/posts/1/01/testing-financial-strategies-with-r-stock-picking/</link>
+      <pubDate>Mon, 01 Jan 0001 00:00:00 +0000</pubDate>
+      
+      <guid>https://aljrico.com/posts/1/01/testing-financial-strategies-with-r-stock-picking/</guid>
+      <description>One of the most common financial advices that you can hear in every christmas meal is that you should be saving a fixed amount of money each month. Not only that, but you should avoid pre-cooked schemes offered by your bank and simply invest your savings in the stock market. Investing in the U.S. market or even the global stock market has been a wise decision if you look at the long term (more than 10 years), even if you invested in peak of any pre-crisis crest.</description>
+    </item>
+    
+  </channel>
+</rss>

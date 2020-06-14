@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>optimisation algorithms on Alejandro J Rico</title>
+    <link>https://aljrico.com/tags/optimisation-algorithms/</link>
+    <description>Recent content in optimisation algorithms on Alejandro J Rico</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <copyright>&lt;a href=&#34;https://creativecommons.org/licenses/by-nc/4.0/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;CC BY-NC 4.0&lt;/a&gt;</copyright>
+    <lastBuildDate>Thu, 06 Sep 2018 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="https://aljrico.com/tags/optimisation-algorithms/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>Genetic Algorithms: Solving the N-Queens problem</title>
+      <link>https://aljrico.com/posts/2018/09/genetic-algorithms-solving-the-n-queens-problem/</link>
+      <pubDate>Thu, 06 Sep 2018 00:00:00 +0000</pubDate>
+      
+      <guid>https://aljrico.com/posts/2018/09/genetic-algorithms-solving-the-n-queens-problem/</guid>
+      <description>Purpose Throughout this article, I aim to provide with a very simple replicable and practical manual on how to use Genetic Algorithms on optimisation problems. During this, I&amp;rsquo;ll try to outline the philosophy of applying Genetic Algorithms (GA) and the implications of the many decisions involved in building such algorithms. With this goal in mind, we are going to solve the generalised 8-queens problem using three slightly different customized GA algorithms and comparing its advantages and weaknesses; this way getting a glimpse of the crucial points of building a proper GA model.</description>
+    </item>
+    
+  </channel>
+</rss>

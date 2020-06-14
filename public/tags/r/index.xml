@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>r on Alejandro J Rico</title>
+    <link>https://aljrico.com/tags/r/</link>
+    <description>Recent content in r on Alejandro J Rico</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <copyright>&lt;a href=&#34;https://creativecommons.org/licenses/by-nc/4.0/&#34; target=&#34;_blank&#34; rel=&#34;noopener&#34;&gt;CC BY-NC 4.0&lt;/a&gt;</copyright>
+    <lastBuildDate>Thu, 29 Nov 2018 00:00:00 +0000</lastBuildDate>
+    
+	<atom:link href="https://aljrico.com/tags/r/index.xml" rel="self" type="application/rss+xml" />
+    
+    
+    <item>
+      <title>My First R Package: harrypotter</title>
+      <link>https://aljrico.com/posts/2018/11/my-first-r-package-harrypotter/</link>
+      <pubDate>Thu, 29 Nov 2018 00:00:00 +0000</pubDate>
+      
+      <guid>https://aljrico.com/posts/2018/11/my-first-r-package-harrypotter/</guid>
+      <description>I want to present you my first R package, already published in CRAN.
+I have to say that has been a challenging but very exciting experience. I&amp;rsquo;ve learned a lot of stuff and now I can appreciate that the way packages are structured, and the existence of the CRAN is one of the highlights of R, and one of its strongest advantages over other languages.
+This package provides the first round of palettes derived from the Harry Potter film series.</description>
+    </item>
+    
+    <item>
+      <title>Genetic Algorithms: Solving the N-Queens problem</title>
+      <link>https://aljrico.com/posts/2018/09/genetic-algorithms-solving-the-n-queens-problem/</link>
+      <pubDate>Thu, 06 Sep 2018 00:00:00 +0000</pubDate>
+      
+      <guid>https://aljrico.com/posts/2018/09/genetic-algorithms-solving-the-n-queens-problem/</guid>
+      <description>Purpose Throughout this article, I aim to provide with a very simple replicable and practical manual on how to use Genetic Algorithms on optimisation problems. During this, I&amp;rsquo;ll try to outline the philosophy of applying Genetic Algorithms (GA) and the implications of the many decisions involved in building such algorithms. With this goal in mind, we are going to solve the generalised 8-queens problem using three slightly different customized GA algorithms and comparing its advantages and weaknesses; this way getting a glimpse of the crucial points of building a proper GA model.</description>
+    </item>
+    
+  </channel>
+</rss>

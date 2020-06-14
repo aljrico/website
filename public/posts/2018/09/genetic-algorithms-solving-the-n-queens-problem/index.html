@@ -1,0 +1,858 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="author" content="Alejandro Jiménez Rico ">
+<meta name="description" content="Purpose Throughout this article, I aim to provide with a very simple replicable and practical manual on how to use Genetic Algorithms on optimisation problems. During this, I&amp;rsquo;ll try to outline the philosophy of applying Genetic Algorithms (GA) and the implications of the many decisions involved in building such algorithms. With this goal in mind, we are going to solve the generalised 8-queens problem using three slightly different customized GA algorithms and comparing its advantages and weaknesses; this way getting a glimpse of the crucial points of building a proper GA model." />
+<meta name="keywords" content=", r, optimisation algorithms" />
+<meta name="robots" content="noodp" />
+<meta name="theme-color" content="#252627" />
+<link rel="canonical" href="https://aljrico.com/posts/2018/09/genetic-algorithms-solving-the-n-queens-problem/" />
+
+
+    <title>
+        
+            Genetic Algorithms: Solving the N-Queens problem :: Alejandro J Rico  — Hello Friend NG Theme
+        
+    </title>
+
+
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/3.2.1/css/flag-icon.min.css" rel="stylesheet"
+    type="text/css">
+
+
+
+<link rel="stylesheet" href="https://aljrico.com/main.435bbdd5eb7d91e6110f02e36297276498e5269f94d60e15cb192dbff8fec07f.css">
+
+
+
+
+    <link rel="apple-touch-icon" sizes="180x180" href="https://aljrico.com/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="https://aljrico.com/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="https://aljrico.com/favicon-16x16.png">
+    <link rel="manifest" href="https://aljrico.com/site.webmanifest">
+    <link rel="mask-icon" href="https://aljrico.com/safari-pinned-tab.svg" color="#252627">
+    <link rel="shortcut icon" href="https://aljrico.com/favicon.ico">
+    <meta name="msapplication-TileColor" content="#252627">
+    <meta name="theme-color" content="#252627">
+
+
+
+<meta itemprop="name" content="Genetic Algorithms: Solving the N-Queens problem">
+<meta itemprop="description" content="Purpose Throughout this article, I aim to provide with a very simple replicable and practical manual on how to use Genetic Algorithms on optimisation problems. During this, I&rsquo;ll try to outline the philosophy of applying Genetic Algorithms (GA) and the implications of the many decisions involved in building such algorithms. With this goal in mind, we are going to solve the generalised 8-queens problem using three slightly different customized GA algorithms and comparing its advantages and weaknesses; this way getting a glimpse of the crucial points of building a proper GA model.">
+<meta itemprop="datePublished" content="2018-09-06T00:00:00&#43;00:00" />
+<meta itemprop="dateModified" content="2018-09-06T00:00:00&#43;00:00" />
+<meta itemprop="wordCount" content="6505">
+<meta itemprop="image" content="https://aljrico.com/"/>
+
+
+
+<meta itemprop="keywords" content="r,optimisation algorithms," />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://aljrico.com/"/>
+
+<meta name="twitter:title" content="Genetic Algorithms: Solving the N-Queens problem"/>
+<meta name="twitter:description" content="Purpose Throughout this article, I aim to provide with a very simple replicable and practical manual on how to use Genetic Algorithms on optimisation problems. During this, I&rsquo;ll try to outline the philosophy of applying Genetic Algorithms (GA) and the implications of the many decisions involved in building such algorithms. With this goal in mind, we are going to solve the generalised 8-queens problem using three slightly different customized GA algorithms and comparing its advantages and weaknesses; this way getting a glimpse of the crucial points of building a proper GA model."/>
+
+
+
+    <meta property="og:title" content="Genetic Algorithms: Solving the N-Queens problem" />
+<meta property="og:description" content="Purpose Throughout this article, I aim to provide with a very simple replicable and practical manual on how to use Genetic Algorithms on optimisation problems. During this, I&rsquo;ll try to outline the philosophy of applying Genetic Algorithms (GA) and the implications of the many decisions involved in building such algorithms. With this goal in mind, we are going to solve the generalised 8-queens problem using three slightly different customized GA algorithms and comparing its advantages and weaknesses; this way getting a glimpse of the crucial points of building a proper GA model." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://aljrico.com/posts/2018/09/genetic-algorithms-solving-the-n-queens-problem/" />
+<meta property="og:image" content="https://aljrico.com/"/>
+<meta property="article:published_time" content="2018-09-06T00:00:00+00:00" />
+<meta property="article:modified_time" content="2018-09-06T00:00:00+00:00" />
+
+
+
+
+
+
+    <meta property="article:published_time" content="2018-09-06 00:00:00 &#43;0000 UTC" />
+
+
+
+
+
+
+
+
+    </head>
+
+    <body class="">
+        <div class="container">
+            <header class="header">
+    <span class="header__inner">
+        <a href="https://aljrico.com/" style="text-decoration: none;">
+    <div class="logo">
+        
+            <span class="logo__mark">></span>
+            <span class="logo__text">$ cd /home/</span>
+            <span class="logo__cursor" style=
+                  "
+                   background-color:#FFCC66;
+                   animation-duration:1s;">
+            </span>
+        
+    </div>
+</a>
+
+
+        <span class="header__right">
+            
+                <nav class="menu">
+    <ul class="menu__inner"><li><a href="https://aljrico.com/about/">About</a></li><li><a href="https://aljrico.com/posts/">Posts</a></li><li><a href="https://aljrico.com/projects/">Projects</a></li>
+    </ul>
+</nav>
+
+                <span class="menu-trigger">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M0 0h24v24H0z" fill="none"/>
+                        <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+                    </svg>
+                </span>
+            
+
+            <span class="theme-toggle unselectable"><svg class="theme-toggler" width="24" height="24" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M22 41C32.4934 41 41 32.4934 41 22C41 11.5066 32.4934 3 22
+  3C11.5066 3 3 11.5066 3 22C3 32.4934 11.5066 41 22 41ZM7 22C7
+  13.7157 13.7157 7 22 7V37C13.7157 37 7 30.2843 7 22Z"/>
+</svg>
+</span>
+        </span>
+    </span>
+</header>
+
+
+            <div class="content">
+                
+    <main class="post">
+
+        <div class="post-info">
+            <p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-clock"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>31 minutes
+
+            
+
+            </p>
+        </div>
+
+        <article>
+            <h1 class="post-title">
+                <a href="https://aljrico.com/posts/2018/09/genetic-algorithms-solving-the-n-queens-problem/">Genetic Algorithms: Solving the N-Queens problem</a>
+            </h1>
+
+            
+
+            <div class="post-content">
+                
+    <img 
+    src="https://aljrico.com/img/white-fungi.jpg" 
+     class="center" 
+     
+     />
+
+
+<h2 id="purpose">Purpose</h2>
+<p>Throughout this article, I aim to provide with a very simple replicable and practical manual on how to use Genetic Algorithms on optimisation problems. During this, I&rsquo;ll try to outline the philosophy of applying Genetic Algorithms (GA) and the implications of the many decisions involved in building such algorithms. With this goal in mind, we are going to solve the generalised <strong>8-queens</strong> problem using three slightly different customized GA algorithms and comparing its advantages and weaknesses; this way getting a glimpse of the crucial points of building a proper GA model.</p>
+<p>By its nature, the N-queens problem is not easily solvable using Genetic Algorithms, and you might finde much more suitable algorithms for this particular problem. Nevertheless, This work might be useful as a general tutorial on learning how to apply GA on any problem.</p>
+<p>It is important to note that the purpose of this project is not to achieve the best performance on computational terms neither to construct a model as efficient as possible, but to <em>explore</em> the general considerations involved in the developement of such algorithms and the metrics derived from them. Hence, we&rsquo;ll use R for its versatility and simplicity when working on ever-changing scripts, providing the more uncomplicated environment for this endeavour.</p>
+<hr>
+<h1 id="on-genetic-algorithms">On Genetic Algorithms</h1>
+<p>Genetic Algorithms are a family of algorithms whose purpose is to solve problems more efficiently than usual standard algorithms by using natural science metaphors with parts of the algorithm being strongly inspired by natural evolutionary behaviour; such as the concept of <strong>mutation</strong>, <strong>crossover</strong> and <strong>natural selection</strong>.</p>
+<p>When applying genetic algorithms one aims to construct a model that, with some randomness, tries different individuals (possible solutions, differentiated by a list of values that defines its genetic information) to a problem , measure its <strong>fitness</strong> - which would mean to evaluate whether this possible solutions are perfect solutions or just <em>good</em> to some extent, and to measure this degree of &lsquo;goodness&rsquo; - and to make the better solutions to <em>breed</em> and produce a new set of possible solutions with better fitness, and somehow closer to the perfect solution.</p>
+<p>This definition is not set in stone and there is some discussion on the classification of different types of algorithms, concerning whether or not they include the crossover part, the mutation or whichever the investigator seems fit to dismiss or include for an specific project. Can be named <em>genetic algorithm</em> an algorithm that has randomly distributed initial population, mutation, natural selection and genetic information being transmited from one generation to the next but it lacks of a crossover? It would be surely included in the label of <strong>Evolutionary Algorithms</strong> even though it has <em>genes</em> to carry forward. Anyway, we will not enter in such discussions nor delimit our model to the strict definitions of one category or another. This means that we may use terms as <em>genetic algorithm</em>, <em>mutation</em> or <em>crossover</em> as loosely as is reasonable for the sake of the purpose of this project.</p>
+<p>This lack of strict mathematical guidance gives the genetic algorithm some freedom to develop <em>heuristic</em> considerations into the build-up of the model. This advantage is also its weakness, for it is a very difficult task to construct a genetic algorithm that converges to the good solutions and not get stuck in solutions that are quite decent but not perfect.</p>
+<p>The final solution is then an end product of the best elements of previous generations, carried forward from generation to generation with some degree of randomness (mutation).</p>
+<p>Along this work, we will travel through the many decisions that have to be taken in order to construct a proper genetic algorithm and the considerations involved in such decisions, affecting the final performance of the model.</p>
+<h1 id="the-puzzle">The Puzzle</h1>
+<p>Once we understand what <em>Genetic Algorithm</em> means, we will try to develop a model guided by the principles of this family of algorithms that tries to solve the famous 8-queens problem, and generalised to as many queens as we can. The objective of this problem is to distribute <em>N</em> queens across a <em>NxN</em> chessboard in such way that no queen is able to kill any other queen in the next move.</p>
+<p>Knowing this, we have to decide how we do define the position of the queens in a straightforward way. The simplest approach is to use a family of permutations. This is a sequence of <em>8</em> unique numbers from <em>1</em> to <em>8</em> (or <em>N</em>, for the N-queen problem) from which we can construct &ldquo;brothers&rdquo; just permutating the position of the elements of the sequence. For instance: <em>(1,2,3,4,5,6,7,8)</em>, <em>(5,6,7,8,1,2,3,4)</em> or <em>(8,7,6,5,4,3,2,1)</em>. The elements of the sequence has the meaning of the position of each queen. In this way, every element of the array (sequence) represents a <em>row</em>, and from every one of which there is a queen; so the number of every element represents in which <em>column</em> we do put the queen. The solution showed in the image below would be represented as <em>(2,5,7,4,1,8,6,3)</em>.</p>
+
+    <img 
+    src="https://raw.githubusercontent.com/aljrico/optimization-algorithms/master/material/8queen-solution.jpg" 
+     class="center" 
+     
+     />
+
+
+<p>In fact, there are <em>40320</em> possible combinations for the 8-queen problems, or <em>N!</em> for <em>N</em> queens. The advantage of using a family of permutations as our <em>individuals</em> is that we do not permit the existence of repeated numbers in the same individual, because that would mean that there are more than one queen in the same row. This considerably minimises the computational effort.</p>
+<h1 id="breeding">Breeding</h1>
+<h2 id="crossover">Crossover</h2>
+<p>Once we have understood what is an individual and how we do define it, the first question to arise is how do we make them procreate. If we get two different individuals and we pretend to generate a child who is similar to both of them, a general standard procedure is to get some of the elements of the array that defines one of the parents, some other elements of the other parent and mix it together. This is trickier than it may seem, for our individuals are permutations and no repeteated numbers are allowed in its genetic code. There are some algorithms or techniques that allows us to recombinate the genetic information of two parents without repeated numbers, such as the <em>Partially Mapped Crossover</em>.</p>
+<p>In this particular problem, the <strong>N-queens problem</strong> seems obvious that a small change (few permutations) in an individual could lead to an utterly different result for the altered individual. This implies that a son resembling his parents does not have to be similarly good (or bad), for even small changes in the positions of a single queen can lead to a massacre.</p>
+<p>For this reason explained, I have decied to present an atypical crossover. This crossover consists in the comparision between the two parents, and to map whose elements of their arrays are equal. We then use this as a mask from which a new individual is created randomly (as the initial population) but remaining untouched those elements that were equal in his parents.</p>
+<p>A good example always helps to clarify things: Imagine that we have two parents, <em>P1 = (2,5,1,7,3,4,6,8)</em> and <em>P2 = (2,5,8,6,4,3,7,1)</em>. Notice that they have something in commmon, the first element and the second one; then one possible child would be <em>C1 = (2,5,3,6,1,8,7)</em>. The child has been generated randomly, but keeping the first position and the second one <em>untouched</em>; this is crucial, because the child carries on unaltered information about his parents. Why is this more useful than a simple recombination? Because we let the algorithm rapidly converge to a solution if those elements the parents had in common were part of a perfect solution, as the stated in the previous example.</p>
+<p>There are plenty of other techniques that try different approaches in order to make the algorithm faster or more robust. The &lsquo;Speciation Heuristic&rsquo;, for instance, penalizes crossover between candidate solutions that are too similar. This encourages population diversity and helps prevent premature convergence to a less optimal solution.</p>
+<p>Why is diversity so important? Two parents with a great &ndash; but not perfect &ndash; fitness can breed excellent &ndash; but not perfect &ndash; children, whose genetic information that is being carried forward from generations does not and will not pertain to a perfect solution. Thus, lack of diversity would lead the algorithm te get stuck into quite good solutions, but never perfect. Since our crossover has precisely the disadvantage of disencouraging diversity, we&rsquo;ll try to avoid it using another technique. We&rsquo;ll add mutation.</p>
+<p><strong>Clarification:</strong> At this point would be relevant to point out that we are making use of loose terminology. So, in order to not piss some people off, I&rsquo;d like to clarify the usage of some terms. First, the definition of the crossover is actually quite controversial and it triggers some utter discussions. The usage we are doing of the term might not be fitting the formal definition of a crossover, you should think about it as some kind of <em>heuristic function</em> that involves the resemblance of both parents and some degree of randomness, but not exactly a crossover, because it does not interchange genetic material.
+Consequently, a genetic algorithm without a proper crossover maybe should actually not be called <em>genetic</em> at all, and use another more generic label as <em>Evolutionary Algorithm</em>. We&rsquo;ll  keep talking about <em>crossover</em> and <em>genetic algorithm</em> from this point onwards anyway.</p>
+<h2 id="mutation">Mutation</h2>
+<p>So we don&rsquo;t want to get stuck in local minima. In order to avoid that, some degree of randomness is needed to escape from those pretty decent individuals. And for this purpose it is useful the concept of random mutations. A typical and very simple mutation consists in permutate two elements of the genoma of an individual. When and where to apply the mutation is chosen randomly and is one of the crucial parameters to balance between a more <em>exploratory</em> or a more <em>elitist</em> model.</p>
+<p>For our situation, we have chosen a weird crossover method with a great risk of falling into local minima; and for this reason we have chosen an also a weird mutation. The mutation that we will apply in our models is considerably more aggressive than the usual, for just one permutation may not let us escape from a whole family of inbreeded quite decent individuals with many elements in common but bearing no hope for a future perfect grandson.</p>
+<p>The mutation used in our models is, then, a complete rearrangement of the genoma of an individual when it is created. That means that every time a couple procreates and produces a child, this individual has a chance to be generated randomly, with no regard for parents resemblance whatsoever.</p>
+<p>Another possible solution for this would have been the standard usual mutation but with higher probabilities of occurring. This could make sense and it is a very reasonable solution; but considering the approach taken before, in which we stated that smaller changes can lead to utterly great differences in fitness, making minor changes very often would be more chaotic in our population developement than a rather improbable major change.</p>
+<p>Using the same example with parents <em>P1</em> and <em>P2</em> (the same as before), a child of this parents that suffers a mutation could be <em>Cm = (8,1,6,2,7,5,3,4)</em>.</p>
+<h1 id="fitness-function">Fitness Function</h1>
+<p>Now that we know how the individuals can procreate and breed, we need to decide which of them will do it. We have to set a rule to establish a hierarchy between individuals, so only some of them are able to produce offspring.</p>
+<p>The number of solutions for the 8-queens version is $92$. This number increases greatly for larger $N$s, and there is no closed formula to predict the number of unique solutions for any given $N$, even though there is a known sequence for it. Considering that we aim to generalise this problem for many more queens than $8$, simply counting the number of dead queens would be misleading when comparing the success of the solutions and could complicate the interpretations derived from the metrics of the model.</p>
+
+    <img 
+    src="https://raw.githubusercontent.com/aljrico/optimization-algorithms/master/material/solutions-space.jpg" 
+     class="center" 
+      width="65%" 
+     />
+
+
+<p>The most common and reasonable way to address this is to define a <em>fitness</em> function. The fitness is telling us, in some sense, how <em>good</em> this individual is.
+Provided that our goal is to obtain an individual with <em>0</em> dead queens, we could set our fitness function as the inverse of the number of dead queens. Or</p>
+<p><!-- raw HTML omitted --><!-- raw HTML omitted --><!-- raw HTML omitted --></p>
+<p>if we want to avoid divergences. This way, our fitness function reaches a maximum of <em>F=1</em> whenever the number of dead queens is <em>0</em>.</p>
+<h1 id="survival-of-the-fittest">Survival of the Fittest</h1>
+<p>Now we know how to establish a hierarchy between the individuals. The first move we make is to create a random initial population of the family of permutations of size $N$. How big is this initial population is a point of great interest but in which we will not focus. Too small population would lead to a less diverse population, and a too large population would lead to an overload of the memory and a lot of redundant time consumption for each computation. So in order to keep this analylsis simple we define a formula to set the initial population as $P = 2Q^2$, where $P$ is the size of the population, and $Q$ is the number of queens of the problem. This way, we maintain a population size in accordance with the magnitude of the problem. Once we have the initial population, the point of the following process will be to select, based on the fitness function, which indiviuals of this population will have the chance of procreating and perpetuate its genetic information.</p>
+<p>There are many different approaches to select the creators of the new generation. Some set a probability to procreate based on the fitness; others kill a bunch of low fitted individuals before they can reproduce. Some models let the individuals generate offspring again and again along the newer generations, if they survive the purge; whereas others models just let the parents to breed once and then they die. One thing is certain, and that the number of toddlers by couple and the extremism of the purge when killing individuals are parameters that have to be considered together, because a disbalance of this two mechanisms can lead to a premature extinction of the population - finalising the program; or worst, to an ever-growing population that can overload the RAM memory of our computer.</p>
+<p>For this project we tested three very different models of purging the population, all of them under the same heuristics that we are calling crossovers that we have already discussed. Now we will talk a bit about these different methodologies, its implications, its limitations and its advantages and how they play with our crossover.</p>
+<h2 id="method-1-recursive-adam--eve">Method 1: Recursive Adam &amp; Eve</h2>
+<p>This method essentially consists on killing all population except the two fittest individuals. These two survivors will produce a new entire population based on its genetic information. The point here is that this couple has so many toddlers that the new population is as numerous as the previous one.</p>
+<p>The point of this kind of method for deciding who are the survivors of the purge is an interesting synergy with the philosophy of our crossover. If <em>Adam &amp; Eve</em> survived the purge it is because they were the best individuals, if they had something in common it maybe is because it forms part of a perfect solution; this way the model converges extremely fast to a <em>good</em> solution. But, as we have discussed, <em>good</em> is not <em>perfect</em>. The disadvantage of this kind of this kind of models is that they are highly exploitative and so they get stuck very rapidly on a <em>good</em> solution, yet is improbable that they find a <em>perfect</em> one.</p>
+<p>We can tune the model into a one more exploratory with lower risk of getting stuck on a non-perfect solution if we increase the chance of mutation. As we have discussed, our mutation process is highly exploratory; so if we rise the probability of this a bit, we might find some delicated equilibrium between this combination of both extremely <em>exploratory</em> and extremely <em>exploitatory</em> measures.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r"><span style="color:#75715e"># Declaring functions needed to compute Genetic Algorithms --------------------------</span>
+
+<span style="color:#75715e"># Find common pattern in parents (function)</span>
+noncommon <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(par1,par2){
+	noncommon <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">which</span>(<span style="color:#f92672">!</span>par1<span style="color:#f92672">-</span>par2 <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>)
+}
+
+<span style="color:#75715e"># Generate offspring (function)</span>
+gen.offspring <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(par1,par2, noff, pmut){
+	<span style="color:#a6e22e">for </span>(j in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>noff){
+		offseed <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sample</span>(par1<span style="color:#a6e22e">[noncommon</span>(par1,par2)])
+		randomdummy <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">runif</span>(<span style="color:#ae81ff">1</span>)
+		<span style="color:#a6e22e">if </span>(randomdummy<span style="color:#f92672">&lt;=</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">-</span>pmut)){
+			<span style="color:#a6e22e">for </span>(i in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>nproblem){
+
+				<span style="color:#a6e22e">if </span>(i <span style="color:#f92672">%in%</span> <span style="color:#a6e22e">noncommon</span>(par1,par2)) {
+					son[i] <span style="color:#f92672">&lt;-</span> offseed[1]
+					offseed <span style="color:#f92672">&lt;-</span> offseed[<span style="color:#ae81ff">-1</span>]
+				}
+				else {son[i] <span style="color:#f92672">&lt;-</span> par1[i]}
+			}
+		}
+		else {son <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sample</span>(par1)}
+		offspring[[j]] <span style="color:#f92672">&lt;-</span> son
+	}
+	<span style="color:#a6e22e">return </span>(offspring)
+}
+
+<span style="color:#75715e"># Measuring fitness (function)</span>
+meas.error <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(subject){
+	error <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0</span>
+	<span style="color:#a6e22e">for </span>(i in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">length</span>(subject)){
+		x <span style="color:#f92672">&lt;-</span> i
+		y <span style="color:#f92672">&lt;-</span> subject[i]
+		<span style="color:#a6e22e">for</span>(j in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span><span style="color:#a6e22e">length</span>(subject)){
+			<span style="color:#a6e22e">if </span>(i <span style="color:#f92672">!=</span>j){
+				dx <span style="color:#f92672">&lt;-</span> j
+				dy <span style="color:#f92672">&lt;-</span> subject[j]
+				<span style="color:#a6e22e">if </span>(<span style="color:#a6e22e">abs</span>(dx<span style="color:#f92672">-</span>x)<span style="color:#f92672">==</span><span style="color:#a6e22e">abs</span>(dy<span style="color:#f92672">-</span>y)){error <span style="color:#f92672">=</span> error<span style="color:#ae81ff">+1</span>}
+			}
+
+		}
+	}
+	<span style="color:#a6e22e">return</span>(error)
+}
+
+kill <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(population,pmut,mort){
+	newpopulation <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">list</span>()
+	b <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">length</span>(population)
+	a <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">1</span>
+	<span style="color:#a6e22e">while</span>(a <span style="color:#f92672">&lt;</span> b <span style="color:#f92672">&amp;</span> <span style="color:#a6e22e">length</span>(population)<span style="color:#f92672">&gt;</span><span style="color:#ae81ff">1</span>){
+		w1 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sample</span>(population,<span style="color:#ae81ff">1</span>)[[1]]
+		w2 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sample</span>(population,<span style="color:#ae81ff">1</span>)[[1]]
+
+		newpopulation[[a]] <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">fight</span>(w1,w2,pmut,mort)
+		a <span style="color:#f92672">&lt;-</span> a<span style="color:#ae81ff">+1</span>
+	}
+	<span style="color:#a6e22e">return</span>(newpopulation)
+}
+
+
+<span style="color:#75715e"># Declaring parameters and executing model --------------------------</span>
+
+
+<span style="color:#75715e"># Magnitude of the Problem (Number of queens)</span>
+nproblem <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">10</span>
+
+<span style="color:#75715e"># Probability of mutation</span>
+pmut <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0.3</span>
+
+<span style="color:#75715e"># Seed for generating initial parents</span>
+seed <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">seq</span>(nproblem)
+
+<span style="color:#75715e"># List to be filled</span>
+offspring <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">list</span>()
+
+<span style="color:#75715e"># Arrays to be filled</span>
+son <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>()
+subject <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>()
+fitness <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>()
+max.fitness <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>()
+
+<span style="color:#75715e"># Number of toddlers by couple</span>
+noff <span style="color:#f92672">&lt;-</span> nproblem<span style="color:#f92672">*</span><span style="color:#ae81ff">5</span>
+
+<span style="color:#75715e"># Initial parents</span>
+par1 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sample</span>(seed)
+par2 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sample</span>(seed)
+
+
+b <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0</span>
+<span style="color:#75715e"># Creating further population ---------------------------------------------------</span>
+repeat{
+	<span style="color:#75715e"># Measuring fitness of every child</span>
+	<span style="color:#a6e22e">for </span>(i in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>noff){
+		offspring[[i]] <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">gen.offspring</span>(par1,par2,noff, pmut)[[i]]
+		subject <span style="color:#f92672">&lt;-</span> offspring[[i]]
+		fitness[i] <span style="color:#f92672">&lt;-</span> (<span style="color:#ae81ff">1</span><span style="color:#f92672">/</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">+</span><span style="color:#a6e22e">meas.error</span>(subject)))
+	}
+
+	<span style="color:#75715e"># Selecting most fittest childs as new parents</span>
+	par1 <span style="color:#f92672">&lt;-</span> offspring<span style="color:#a6e22e">[sort</span>(<span style="color:#f92672">-</span>fitness,index.return<span style="color:#f92672">=</span><span style="color:#66d9ef">TRUE</span>)[[2]][1]][[1]]
+	par2 <span style="color:#f92672">&lt;-</span> offspring<span style="color:#a6e22e">[sort</span>(<span style="color:#f92672">-</span>fitness,index.return<span style="color:#f92672">=</span><span style="color:#66d9ef">TRUE</span>)[[2]][2]][[1]]
+	max.fitness <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">append</span>(max.fitness, <span style="color:#a6e22e">max</span>(fitness))
+
+	b <span style="color:#f92672">&lt;-</span> b<span style="color:#ae81ff">+1</span>
+
+	<span style="color:#a6e22e">if </span>(<span style="color:#a6e22e">max</span>(fitness)<span style="color:#f92672">==</span> nproblem<span style="color:#f92672">*</span>(nproblem<span style="color:#ae81ff">-1</span>)) break
+	<span style="color:#a6e22e">if </span>(b <span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">5000</span>) break
+	<span style="color:#a6e22e">if </span>(<span style="color:#a6e22e">max</span>(fitness) <span style="color:#f92672">==</span> <span style="color:#ae81ff">1</span>) break
+}
+</code></pre></div><h2 id="method-2-kill-half-of-the-population">Method 2: Kill half of the population</h2>
+<p>I didn&rsquo;t get with a fancy name this time.</p>
+<p>Another way to address this problem is to tweak a bit our first method and be more magnanimous with the population, letting survive not only two individuals, but half of the entire population. Which half? The lest fitted half. Killing the worst half of the population let us continue with the philosophy of combining individuals which are the best, and use on them a crossover that remarks those characteristics that made them the best individuals in town. This way, improving the general fit of the next population. In this case though, letting far more individuals to breed, we are openning the solutions space to different families of individuals, increasing the variability between individuals. This saves us of converging into local minima - that is, getting stuck with quite decent but non-perfect individuals.</p>
+<p>Once we have several individuals ready to procreate, another important decision is to set how we make couples out of them. There are many different approaches to address this point. Some models pair the individuals randomly but with exclusivity - that is, any couple can just procreate between them and one time. Some others make couples out of individuals with similar fitness, so this way it guarantees some degree of inbreeding. Different models do exactly the contrary, they pair the survivors priorizing those couples with great differences between their fitness value, facilitating diversity within the population.</p>
+<p>In our case, we will make it more simple. We have just selected random couples with exclusivity. This way we can easily tune the number of toddlers by couple in order to predict the size of the future populations. Moreover, it makes sense that we aim to avoid strategies derived from considerations such as &ldquo;similar fitness implies similar individuals&rdquo;.</p>
+<p>In the future, we may call this model just <em>Half</em>, for simplicity.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r"><span style="color:#75715e"># Declaring functions needed to compute Genetic Algorithms --------------------------</span>
+
+<span style="color:#75715e"># Find common pattern in parents (function)</span>
+noncommon <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(par1,par2){
+	noncommon <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">which</span>(<span style="color:#f92672">!</span>par1<span style="color:#f92672">-</span>par2 <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>)
+}
+
+<span style="color:#75715e"># Generate offspring (function)</span>
+gen.offspring <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(par1,par2, noff, pmut){
+	<span style="color:#a6e22e">for </span>(j in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>noff){
+		offseed <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sample</span>(par1<span style="color:#a6e22e">[noncommon</span>(par1,par2)])
+		randomdummy <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">runif</span>(<span style="color:#ae81ff">1</span>)
+		<span style="color:#a6e22e">if </span>(randomdummy<span style="color:#f92672">&lt;=</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">-</span>pmut)){
+			<span style="color:#a6e22e">for </span>(i in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>nproblem){
+
+				<span style="color:#a6e22e">if </span>(i <span style="color:#f92672">%in%</span> <span style="color:#a6e22e">noncommon</span>(par1,par2)) {
+					son[i] <span style="color:#f92672">&lt;-</span> offseed[1]
+					offseed <span style="color:#f92672">&lt;-</span> offseed[<span style="color:#ae81ff">-1</span>]
+				}
+				else {son[i] <span style="color:#f92672">&lt;-</span> par1[i]}
+			}
+		}
+		else {son <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sample</span>(par1)}
+		offspring[[j]] <span style="color:#f92672">&lt;-</span> son
+	}
+	<span style="color:#a6e22e">return </span>(offspring)
+}
+
+<span style="color:#75715e"># Measuring fitness (function)</span>
+meas.error <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(subject){
+	error <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0</span>
+	<span style="color:#a6e22e">for </span>(i in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">length</span>(subject)){
+		x <span style="color:#f92672">&lt;-</span> i
+		y <span style="color:#f92672">&lt;-</span> subject[i]
+		<span style="color:#a6e22e">for</span>(j in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span><span style="color:#a6e22e">length</span>(subject)){
+			<span style="color:#a6e22e">if </span>(i <span style="color:#f92672">!=</span>j){
+				dx <span style="color:#f92672">&lt;-</span> j
+				dy <span style="color:#f92672">&lt;-</span> subject[j]
+				<span style="color:#a6e22e">if </span>(<span style="color:#a6e22e">abs</span>(dx<span style="color:#f92672">-</span>x)<span style="color:#f92672">==</span><span style="color:#a6e22e">abs</span>(dy<span style="color:#f92672">-</span>y)){error <span style="color:#f92672">=</span> error<span style="color:#ae81ff">+1</span>}
+			}
+
+		}
+	}
+	<span style="color:#a6e22e">return</span>(error)
+}
+
+kill <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(population,pmut,mort){
+	newpopulation <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">list</span>()
+	b <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">length</span>(population)
+	a <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">1</span>
+	<span style="color:#a6e22e">while</span>(a <span style="color:#f92672">&lt;</span> b <span style="color:#f92672">&amp;</span> <span style="color:#a6e22e">length</span>(population)<span style="color:#f92672">&gt;</span><span style="color:#ae81ff">1</span>){
+		w1 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sample</span>(population,<span style="color:#ae81ff">1</span>)[[1]]
+		w2 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sample</span>(population,<span style="color:#ae81ff">1</span>)[[1]]
+
+		newpopulation[[a]] <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">fight</span>(w1,w2,pmut,mort)
+		a <span style="color:#f92672">&lt;-</span> a<span style="color:#ae81ff">+1</span>
+	}
+	<span style="color:#a6e22e">return</span>(newpopulation)
+}
+
+
+<span style="color:#75715e"># Declaring parameters and executing model --------------------------</span>
+
+<span style="color:#75715e"># Number of toddlers by couple</span>
+noff <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">4</span>
+
+<span style="color:#75715e"># Magnitude of the Problem</span>
+nproblem <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">13</span>
+
+<span style="color:#75715e"># Probability of mutation</span>
+pmut <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0.1</span>
+
+<span style="color:#75715e"># Mortality</span>
+mort <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0.45</span>
+
+<span style="color:#75715e"># List to be filled</span>
+offspring <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">list</span>()
+population <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">list</span>()
+
+<span style="color:#75715e"># Arrays to be filled</span>
+son <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>()
+subject <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>()
+fitness <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>()
+av.fitness <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>()
+max.fitness <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>()
+
+<span style="color:#75715e"># Count Variables</span>
+b <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0</span>
+ind <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0</span>
+
+<span style="color:#75715e"># Initial Population ------------------------------------------------------</span>
+ipop <span style="color:#f92672">&lt;-</span> (nproblem)^2<span style="color:#f92672">*</span><span style="color:#ae81ff">2</span>
+<span style="color:#a6e22e">for</span>(i in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>ipop){
+	population[[i]] <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sample</span>(<span style="color:#a6e22e">seq</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>nproblem))
+}
+
+<span style="color:#75715e"># Reproduction ---------------------------------------------------</span>
+
+repeat{
+	m <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">1</span>
+	ind <span style="color:#f92672">&lt;-</span> ind <span style="color:#f92672">+</span> <span style="color:#a6e22e">length</span>(population)
+	<span style="color:#a6e22e">while</span>(<span style="color:#a6e22e">length</span>(population)<span style="color:#f92672">&gt;</span><span style="color:#ae81ff">1</span>){
+		<span style="color:#75715e"># Selecting parents from population</span>
+		par1 <span style="color:#f92672">&lt;-</span> population[[1]]; population <span style="color:#f92672">&lt;-</span> population[<span style="color:#ae81ff">-1</span>]
+		par2 <span style="color:#f92672">&lt;-</span> population[[1]]; population <span style="color:#f92672">&lt;-</span> population[<span style="color:#ae81ff">-1</span>]
+
+		<span style="color:#75715e"># Measuring fitness of every child</span>
+		<span style="color:#a6e22e">for </span>(i in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>noff){
+			offspring[[m]] <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">gen.offspring</span>(par1,par2,noff,pmut)[[i]]
+			subject <span style="color:#f92672">&lt;-</span> offspring[[m]]
+			fitness[m] <span style="color:#f92672">&lt;-</span> (<span style="color:#ae81ff">1</span><span style="color:#f92672">/</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">+</span><span style="color:#a6e22e">meas.error</span>(subject)))
+			m <span style="color:#f92672">&lt;-</span> m<span style="color:#ae81ff">+1</span>
+		}
+	}
+
+	<span style="color:#75715e"># Performance measures</span>
+	av.fitness <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">append</span>(av.fitness, <span style="color:#a6e22e">mean</span>(fitness))
+	max.fitness <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">append</span>(max.fitness, <span style="color:#a6e22e">max</span>(fitness))
+
+	<span style="color:#75715e"># Get the most fittest individual</span>
+	bestguy <span style="color:#f92672">&lt;-</span> offspring<span style="color:#a6e22e">[max</span>(fitness,index.return<span style="color:#f92672">=</span><span style="color:#66d9ef">TRUE</span>)]
+	<span style="color:#a6e22e">if </span>(<span style="color:#a6e22e">max</span>(fitness) <span style="color:#f92672">==</span> <span style="color:#ae81ff">1</span>) {
+		print <span style="color:#f92672">&lt;-</span> <span style="color:#e6db74">&#39;SUCCESS!&#39;</span>
+		break
+	}
+
+	<span style="color:#75715e"># Kill all parents</span>
+	population <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">list</span>()
+	<span style="color:#a6e22e">rm</span>(par1,par2)
+
+	<span style="color:#75715e"># Populating the new world</span>
+	a <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">round</span>(<span style="color:#a6e22e">length</span>(offspring)<span style="color:#f92672">*</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">-</span>mort)<span style="color:#f92672">*</span><span style="color:#ae81ff">0.5</span>)<span style="color:#f92672">*</span><span style="color:#ae81ff">2</span>
+	k <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">1</span>
+	<span style="color:#a6e22e">while </span>(<span style="color:#a6e22e">length</span>(offspring) <span style="color:#f92672">!=</span> <span style="color:#ae81ff">0</span>){
+		population[[k]] <span style="color:#f92672">&lt;-</span> offspring[<span style="color:#a6e22e">[max</span>(fitness,index.return<span style="color:#f92672">=</span><span style="color:#66d9ef">TRUE</span>)]]
+		fitness <span style="color:#f92672">&lt;-</span> fitness[<span style="color:#f92672">-</span><span style="color:#a6e22e">max</span>(fitness,index.return<span style="color:#f92672">=</span><span style="color:#66d9ef">TRUE</span>)]
+		offspring <span style="color:#f92672">&lt;-</span> offspring[<span style="color:#f92672">-</span><span style="color:#a6e22e">max</span>(fitness,index.return<span style="color:#f92672">=</span><span style="color:#66d9ef">TRUE</span>)]
+		k <span style="color:#f92672">&lt;-</span> k <span style="color:#ae81ff">+1</span>
+		<span style="color:#a6e22e">if</span>(k <span style="color:#f92672">&gt;</span> a) break
+	}
+	b <span style="color:#f92672">&lt;-</span> b<span style="color:#ae81ff">+1</span>
+	offspring <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">list</span>() <span style="color:#75715e"># Kill all children not fitted enough</span>
+
+	<span style="color:#a6e22e">if </span>(b <span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">5000</span>) {
+		print <span style="color:#f92672">&lt;-</span> <span style="color:#e6db74">&#34;FAILURE&#34;</span>
+		break
+		}
+	<span style="color:#a6e22e">if </span>(<span style="color:#a6e22e">length</span>(population)<span style="color:#f92672">&lt;</span><span style="color:#ae81ff">2</span>){
+		print <span style="color:#f92672">&lt;-</span> <span style="color:#e6db74">&#39;EXTINCTION&#39;</span>
+		break
+	}
+}
+</code></pre></div><h2 id="method-3-the-great-tournament">Method 3: The Great Tournament</h2>
+<p>This last method is a bit funny. <em>The Great Tournament</em> is a strange version of a standard methodology that we have not yet discussed, that is the <em>tournament selection</em>.</p>
+<p>A tournament essentially consists in selecting randomly a bunch of individuals and make them <em>fight</em>; and the result of this battle will decide which of them survives the purge. The most obvious way to decide the winner is to compare its fitness value; the victorious figther would be he who was the greater fitness. Another approach, more exploratory, would be simply to set a probability of victory biased towards the more fittest individual.</p>
+<p>As a clarification; imagine selecting 10 random individuals out of the entire population and making them to fight, one of them comes out as the mighty winner and goes into a dating pool to mate; then select another set of 10 random individuals and make them fight, select a winner, put him into the dating pool, and iterate. Once we have a dating pool plenty of proud champions, we make them breed and generate an entire new generation.</p>
+<p>Some simple tweaks that can be performed on the tournament method are changing the battle size; we can make 3, 10 or 100 individuals fight each other. There may be more than one winner, too. And what about the losers? Can they have the chance to get involved in another fight again and try to win this time, or we just kill them?</p>
+<p>These changes have a great impact on the performance of the final algorithm; for example, a larger tournament size implies a higher selection pressure, which turns in a more elitist model.</p>
+<p>For our study, we have selected battle size of just $2$ oponents. In this fight, the individual of higher fitness has a chance of winning of an $85%$, whereas the weaker individual has a $15%$ (obviously), with no regard on how big or small is the difference between their fitness.</p>
+<p>To this simple method, I have decided to add an interesting tweak that we&rsquo;ll give some kind of a second chance with the loser. If the stronger individual wins the battle, he is the survivor and he is sent to the dating pool to populate the new generation. But if the weaker individual is the one who wins, he does not survive the purge; he just mates with his opponent and gets a child, and this child is the one sent to the dating pool in order to populate the new generation, with his father/mother.</p>
+<p>This weird method has both exploratory characteristics - because of its small tournament size - and exploitatory ones - because of the impossibility for the weaker individual to carry forward its genetic information without mating his rival.</p>
+<p>The point again is to create some balance between exploratory and exploitatory characteristics that leads to a reasonable equilibrated model.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r"><span style="color:#75715e"># Declaring functions needed to compute Genetic Algorithms --------------------------</span>
+
+<span style="color:#75715e"># Find common pattern in parents (function)</span>
+noncommon <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(par1,par2){
+	noncommon <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">which</span>(<span style="color:#f92672">!</span>par1<span style="color:#f92672">-</span>par2 <span style="color:#f92672">==</span> <span style="color:#ae81ff">0</span>)
+}
+
+<span style="color:#75715e"># Generate offspring (function)</span>
+gen.offspring <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(par1,par2, noff, pmut){
+	<span style="color:#a6e22e">for </span>(j in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>noff){
+		offseed <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sample</span>(par1<span style="color:#a6e22e">[noncommon</span>(par1,par2)])
+		randomdummy <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">runif</span>(<span style="color:#ae81ff">1</span>)
+		<span style="color:#a6e22e">if </span>(randomdummy<span style="color:#f92672">&lt;=</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">-</span>pmut)){
+			<span style="color:#a6e22e">for </span>(i in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>nproblem){
+
+				<span style="color:#a6e22e">if </span>(i <span style="color:#f92672">%in%</span> <span style="color:#a6e22e">noncommon</span>(par1,par2)) {
+					son[i] <span style="color:#f92672">&lt;-</span> offseed[1]
+					offseed <span style="color:#f92672">&lt;-</span> offseed[<span style="color:#ae81ff">-1</span>]
+				}
+				else {son[i] <span style="color:#f92672">&lt;-</span> par1[i]}
+			}
+		}
+		else {son <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sample</span>(par1)}
+		offspring[[j]] <span style="color:#f92672">&lt;-</span> son
+	}
+	<span style="color:#a6e22e">return </span>(offspring)
+}
+
+<span style="color:#75715e"># Measuring fitness (function)</span>
+meas.error <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(subject){
+	error <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0</span>
+	<span style="color:#a6e22e">for </span>(i in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span> <span style="color:#a6e22e">length</span>(subject)){
+		x <span style="color:#f92672">&lt;-</span> i
+		y <span style="color:#f92672">&lt;-</span> subject[i]
+		<span style="color:#a6e22e">for</span>(j in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span><span style="color:#a6e22e">length</span>(subject)){
+			<span style="color:#a6e22e">if </span>(i <span style="color:#f92672">!=</span>j){
+				dx <span style="color:#f92672">&lt;-</span> j
+				dy <span style="color:#f92672">&lt;-</span> subject[j]
+				<span style="color:#a6e22e">if </span>(<span style="color:#a6e22e">abs</span>(dx<span style="color:#f92672">-</span>x)<span style="color:#f92672">==</span><span style="color:#a6e22e">abs</span>(dy<span style="color:#f92672">-</span>y)){error <span style="color:#f92672">=</span> error<span style="color:#ae81ff">+1</span>}
+			}
+
+		}
+	}
+	<span style="color:#a6e22e">return</span>(error)
+}
+
+kill <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(population,pmut,mort){
+	newpopulation <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">list</span>()
+	b <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">length</span>(population)
+	a <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">1</span>
+	<span style="color:#a6e22e">while</span>(a <span style="color:#f92672">&lt;</span> b <span style="color:#f92672">&amp;</span> <span style="color:#a6e22e">length</span>(population)<span style="color:#f92672">&gt;</span><span style="color:#ae81ff">1</span>){
+		w1 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sample</span>(population,<span style="color:#ae81ff">1</span>)[[1]]
+		w2 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sample</span>(population,<span style="color:#ae81ff">1</span>)[[1]]
+
+		newpopulation[[a]] <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">fight</span>(w1,w2,pmut,mort)
+		a <span style="color:#f92672">&lt;-</span> a<span style="color:#ae81ff">+1</span>
+	}
+	<span style="color:#a6e22e">return</span>(newpopulation)
+}
+
+
+fight <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(w1, w2,pmut,mort){
+	e1 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">meas.error</span>(w1)
+	e2 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">meas.error</span>(w2)
+
+	<span style="color:#a6e22e">if</span>(e1 <span style="color:#f92672">&gt;</span> e2) {
+		a <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">runif</span>(<span style="color:#ae81ff">1</span>)
+		<span style="color:#a6e22e">if</span>(a <span style="color:#f92672">&lt;</span> mort) vic <span style="color:#f92672">&lt;-</span> w2
+		else  vic <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">gen.offspring </span>(w1,w2,<span style="color:#ae81ff">1</span>,pmut)[[1]]
+	}
+	<span style="color:#a6e22e">if</span>(e1<span style="color:#f92672">&lt;</span> e2){
+		a <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">runif</span>(<span style="color:#ae81ff">1</span>)
+		<span style="color:#a6e22e">if</span>(a<span style="color:#f92672">&lt;</span> mort) vic <span style="color:#f92672">&lt;-</span> w1
+		else vic <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">gen.offspring </span>(w1,w2,<span style="color:#ae81ff">1</span>,pmut)[[1]]
+	}
+	<span style="color:#a6e22e">if</span>(e1 <span style="color:#f92672">==</span> e2) vic <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">gen.offspring </span>(w1,w2,<span style="color:#ae81ff">1</span>,pmut)[[1]]
+	<span style="color:#a6e22e">return</span>(vic)
+}
+
+<span style="color:#75715e"># Declaring parameters and executing model --------------------------</span>
+
+<span style="color:#75715e"># Number of toddlers by couple</span>
+noff <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">5</span>
+
+<span style="color:#75715e"># Magnitude of the Problem</span>
+nproblem <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">10</span>
+
+<span style="color:#75715e"># Probability of mutation</span>
+pmut <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0.01</span>
+
+<span style="color:#75715e"># Mortality</span>
+mort <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0.5</span>
+
+<span style="color:#75715e"># List to be filled</span>
+offspring <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">list</span>()
+population <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">list</span>()
+
+<span style="color:#75715e"># Arrays to be filled</span>
+son <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>()
+subject <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>()
+fitness <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>()
+av.fitness <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>()
+max.fitness <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>()
+
+<span style="color:#75715e"># Count Variables</span>
+b <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0</span>
+ind <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0</span>
+
+<span style="color:#75715e"># Initial Population ------------------------------------------------------</span>
+ipop <span style="color:#f92672">&lt;-</span> (nproblem)^2<span style="color:#f92672">*</span><span style="color:#ae81ff">2</span>
+<span style="color:#a6e22e">for</span>(i in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>ipop){
+	population[[i]] <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sample</span>(<span style="color:#a6e22e">seq</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>nproblem))
+}
+
+<span style="color:#75715e"># Reproduction ---------------------------------------------------</span>
+
+repeat{
+	m <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">1</span>
+	ind <span style="color:#f92672">&lt;-</span> ind <span style="color:#f92672">+</span> <span style="color:#a6e22e">length</span>(population)
+
+	<span style="color:#75715e"># Measuring fitness of every member of the population for statistical purposes</span>
+	<span style="color:#a6e22e">for </span>(i in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span><span style="color:#a6e22e">length</span>(population)){
+		subject <span style="color:#f92672">&lt;-</span> population[[i]]
+		fitness[i] <span style="color:#f92672">&lt;-</span> (<span style="color:#ae81ff">1</span><span style="color:#f92672">/</span>(<span style="color:#ae81ff">1</span><span style="color:#f92672">+</span><span style="color:#a6e22e">meas.error</span>(subject)))
+	}
+
+
+	<span style="color:#75715e"># Performance measures</span>
+	av.fitness <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">append</span>(av.fitness, <span style="color:#a6e22e">mean</span>(fitness))
+	max.fitness <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">append</span>(max.fitness, <span style="color:#a6e22e">max</span>(fitness))
+
+	<span style="color:#75715e"># Get the most fittest individual</span>
+	bestguy <span style="color:#f92672">&lt;-</span> population<span style="color:#a6e22e">[max</span>(fitness,index.return<span style="color:#f92672">=</span><span style="color:#66d9ef">TRUE</span>)]
+	<span style="color:#a6e22e">if </span>(<span style="color:#a6e22e">max</span>(fitness) <span style="color:#f92672">==</span> <span style="color:#ae81ff">1</span>) {
+		print <span style="color:#f92672">&lt;-</span> <span style="color:#e6db74">&#39;SUCCESS!&#39;</span>
+		break
+	}
+
+	<span style="color:#75715e"># Killing festivity</span>
+	population <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">kill</span>(population,pmut,mort)
+	b <span style="color:#f92672">&lt;-</span> b<span style="color:#ae81ff">+1</span>
+
+	<span style="color:#a6e22e">while</span>(<span style="color:#a6e22e">length</span>(population)<span style="color:#f92672">&gt;</span><span style="color:#ae81ff">1</span>){
+		<span style="color:#75715e"># Selecting parents from population</span>
+		par1 <span style="color:#f92672">&lt;-</span> population[[1]]; population <span style="color:#f92672">&lt;-</span> population[<span style="color:#ae81ff">-1</span>]
+		par2 <span style="color:#f92672">&lt;-</span> population[[1]]; population <span style="color:#f92672">&lt;-</span> population[<span style="color:#ae81ff">-1</span>]
+		<span style="color:#a6e22e">for</span>(i in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>noff){
+			offspring[[m]] <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">gen.offspring</span>(par1,par2,noff,pmut)[[i]]
+		}
+		m <span style="color:#f92672">&lt;-</span> m<span style="color:#ae81ff">+1</span>
+	}
+
+	population <span style="color:#f92672">&lt;-</span> offspring
+
+	<span style="color:#a6e22e">if </span>(b <span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">5000</span>) {
+		print <span style="color:#f92672">&lt;-</span> <span style="color:#e6db74">&#34;FAILURE&#34;</span>
+		break
+	}
+	<span style="color:#a6e22e">if </span>(<span style="color:#a6e22e">length</span>(population)<span style="color:#f92672">&lt;</span><span style="color:#ae81ff">2</span>){
+		print <span style="color:#f92672">&lt;-</span> <span style="color:#e6db74">&#39;EXTINCTION&#39;</span>
+		break
+	}
+}
+</code></pre></div><h1 id="results--discussion">Results &amp; Discussion</h1>
+<h2 id="measurement-metrics">Measurement Metrics</h2>
+<p>Now that we have constructed completely our <strong>Genetic Algorithms</strong>, it is important to be aware of how well they perform. In computational problems, it is usual to mean <em>fast</em> when we say <em>good</em>; so the point of this chapter is to evaluate the speed in which our algorithms manage to find a perfect solution.</p>
+<p>As stated in the abstract, we are using an inefficient programming language. So the computing time required for any process would be much larger than with many others languages such as &ldquo;C&rdquo; or &ldquo;Fortran&rdquo;. Hence, the point of the measurment of performance of our algorithms has to be something that can be extrapolated to many others programming languges, or to a more efficient programmer; hoping that some of these algorithms will be transcribed in such way that they may be more useful for direct application.</p>
+<p>For this reason, the performance metric that we will be measuring all the time will be <strong>individuals</strong>. Along all the algorithms we are generating tons of individuals, and every individual is a trial to get the very solution of the problem. Thus, the fewer individuals a program has to generate in order to get the proper solution the more efficient it is. How much time it takes to generate every individual is a problem essentially regarding the programming language and the diligence in which the program is coded; effort that lands outside the scope of this project.</p>
+<p>Another perspective to analyse the performance of a Genetic Algorithm is to measure the <em>time evolution</em> of the average fitness of its population from generation to generation, or the time evolution of the fitness of the best invidiual of each generation. Ideally, a proper algorithm tens to consistently improve those metrics over generations.</p>
+<h2 id="performance">Performance</h2>
+<p>Now that we know what to measure, we must measure it. In order to do that, we run those models over different number of queens, with different numbers of probability of mutation and as many times as it has been plausible. Then all data is recorded and stored for its analysis. This can be done with the bunchs of code stated above. It might take a few hours to compute everything, so I&rsquo;d recommend to let it running overnight.</p>
+<p>Once we have all the data generated, we just need to loaded and clean it a little bit for proper visualisation.</p>
+<p>We&rsquo;ll start theh analysis  looking at the data without making distinction between the models.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">df <span style="color:#f92672">%&gt;%</span>
+	<span style="color:#a6e22e">filter</span>(model <span style="color:#f92672">!=</span> <span style="color:#e6db74">&#34;random&#34;</span>) <span style="color:#f92672">%&gt;%</span>
+	<span style="color:#a6e22e">ggplot</span>(<span style="color:#a6e22e">aes</span>(x<span style="color:#f92672">=</span><span style="color:#a6e22e">as.factor</span>(nqueens), y <span style="color:#f92672">=</span> <span style="color:#a6e22e">log</span>(ind), fill <span style="color:#f92672">=</span> <span style="color:#a6e22e">as.factor</span>(nqueens))) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">geom_violin</span>(bw<span style="color:#f92672">=</span><span style="color:#ae81ff">0.2</span>, scale<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;area&#34;</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">scale_fill_viridis</span>(discrete<span style="color:#f92672">=</span><span style="color:#66d9ef">TRUE</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">labs</span>(x <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Number of Queens&#34;</span>, y <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Log(Individuals)&#34;</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">theme_bw</span>() <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">theme</span>(legend.position<span style="color:#f92672">=</span><span style="color:#e6db74">&#34;none&#34;</span>)
+</code></pre></div>
+    <img 
+    src="https://raw.githubusercontent.com/aljrico/blog/master/_posts/rmarkdown/genetic-algorithms_files/figure-html/unnamed-chunk-5-1.png" 
+     class="center" 
+     
+     />
+
+
+<p>If we look at the figure above, we can appreciate the increase in computational effort when we rise the number of queens of the problem to solve. One interesting thing about these kind of plots is that we can appreciate the distribution of the results, and notice that not only increases the computation needed to solve a problem, but the dispersion of the results. This means that it is harder to predict the time needed to get a solution.</p>
+<p>If we want to dig a little deeper, we can split these results from the different models used each time we run the program.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">df <span style="color:#f92672">%&gt;%</span>
+	<span style="color:#a6e22e">filter</span>(model <span style="color:#f92672">!=</span> <span style="color:#e6db74">&#34;random&#34;</span>) <span style="color:#f92672">%&gt;%</span>
+	<span style="color:#a6e22e">ggplot</span>(<span style="color:#a6e22e">aes</span>(x<span style="color:#f92672">=</span><span style="color:#a6e22e">as.factor</span>(nqueens), y <span style="color:#f92672">=</span> <span style="color:#a6e22e">log</span>(ind), colour <span style="color:#f92672">=</span> <span style="color:#a6e22e">as.factor</span>(model))) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">geom_jitter</span>() <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">scale_colour_viridis</span>(discrete<span style="color:#f92672">=</span><span style="color:#66d9ef">TRUE</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">labs</span>(x <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Number of Queens&#34;</span>, y <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Log(Individuals)&#34;</span>, colour <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Model&#34;</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">theme_bw</span>()
+</code></pre></div>
+    <img 
+    src="https://raw.githubusercontent.com/aljrico/blog/master/_posts/rmarkdown/genetic-algorithms_files/figure-html/unnamed-chunk-6-1.png" 
+     class="center" 
+     
+     />
+
+
+<p>In this figure, we can notice how different they behave. It can be seen that the <code>tourn</code> (which is the <em>Great Tournament</em> model) behave much more chaotically than the other two. Moreover, it seems that usually the <code>half</code> model and the <code>allbut2</code> (<em>Recursive Adam &amp; Eve</em>) tend to be quicker finding the optimal solution. This happens for a number of queens lower than $10$, once we have reached that level of difficulty, the results start to be messy and somehow less predictable.</p>
+<hr>
+<p>So far, we have seen the relation between the Number of Queens of the problem and the computaional effort. It would be interesting to analyse now the effect on performance of the probability of mutation. We constructed this possibility, when building the model, in order to compensate some of the most elitistic characteristics of our models. It could be interesting how the value of this parameters affects the results.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">df <span style="color:#f92672">%&gt;%</span>
+	<span style="color:#a6e22e">filter</span>(model <span style="color:#f92672">!=</span> <span style="color:#e6db74">&#34;random&#34;</span>) <span style="color:#f92672">%&gt;%</span>
+	<span style="color:#a6e22e">ggplot</span>(<span style="color:#a6e22e">aes</span>(x<span style="color:#f92672">=</span><span style="color:#a6e22e">as.factor</span>(nqueens),y<span style="color:#f92672">=</span><span style="color:#a6e22e">as.factor</span>(mutate))) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">geom_tile</span>(<span style="color:#a6e22e">aes</span>(fill<span style="color:#f92672">=</span><span style="color:#a6e22e">log</span>(ind))) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">facet_wrap</span>(<span style="color:#f92672">~</span>model) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">scale_fill_viridis</span>(discrete<span style="color:#f92672">=</span><span style="color:#66d9ef">FALSE</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">labs</span>(x <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Number of Queens&#34;</span>, y <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Mutation Probability&#34;</span>, fill <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Log(Individuals)&#34;</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">theme_bw</span>()
+</code></pre></div>
+    <img 
+    src="https://raw.githubusercontent.com/aljrico/blog/master/_posts/rmarkdown/genetic-algorithms_files/figure-html/unnamed-chunk-7-1.png" 
+     class="center" 
+     
+     />
+
+
+<p>If we now take a look at the figure above, we can notice the major differences between the models, and how differently they make use of the probability of mutation. The biggest influence can be seen in the <code>allbut2</code> model. In fact, smaller probabilities of mutation such as $0.01$ or $0.05$ have been to be removed from the analysis because this model took so much time to compute even the smaller problems that the collection of relevant data was not feasible. This issue remarks the great importance of mutation in the construction of so very exploitatory models. Actually, it might be noticed that it behaves better when this probability is increased; achieving some kind of sweetspot around $p=0.5$.</p>
+<p>Nevertheless, it is also relevant to point out how unconnected the probability of mutation and the performance of the <code>half</code> model and the <code>tournament</code> model they seem. The number of individuals needed to find a solution does not seem to depend on the probability of mutation whatsoever.This kind of insight is extremely useful developing this kind of algorithms.</p>
+<h2 id="what-makes-a-good-model">What makes a Good Model</h2>
+<p>Despite all this fancy algorithms, we also know that is always possible to solve the N-Queens problem using the simplest and savagest method available, just trying combinations at random until one of them happens to be perfect and outputs $F = 1$. How probable is that? It depends on the dimensions of each problem. If we look back at the table of the solucions space we can see the number of possible unique individuals, with the number of unique perfect solutions of the problem. This way we can find out the an expected number of individuals needed to get a perfect solution.</p>
+<p>More practically, we could just plainly generate random permutations of the individuals until one of them happens to be the perfect solution. Then record how many trials have been necessaries, and iterate until we have enough data to compare the results.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">df <span style="color:#f92672">%&gt;%</span> <span style="color:#75715e"># Used</span>
+	<span style="color:#a6e22e">filter</span>(model <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;random&#34;</span>) <span style="color:#f92672">%&gt;%</span>
+	<span style="color:#a6e22e">ggplot</span>(<span style="color:#a6e22e">aes</span>(x<span style="color:#f92672">=</span><span style="color:#a6e22e">as.factor</span>(nqueens), y <span style="color:#f92672">=</span> <span style="color:#a6e22e">log</span>(ind), fill <span style="color:#f92672">=</span> <span style="color:#a6e22e">as.factor</span>(nqueens))) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">geom_violin</span>(bw<span style="color:#f92672">=</span><span style="color:#ae81ff">0.25</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">scale_fill_viridis</span>(discrete<span style="color:#f92672">=</span><span style="color:#66d9ef">TRUE</span>, option <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;B&#34;</span>, begin<span style="color:#f92672">=</span><span style="color:#ae81ff">0.1</span>,end <span style="color:#f92672">=</span><span style="color:#ae81ff">0.9</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">labs</span>(x <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Number of Queens&#34;</span>, y <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Log(Individuals)&#34;</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">theme_bw</span>() <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">theme</span>(legend.position <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;none&#34;</span>)
+</code></pre></div>
+    <img 
+    src="https://raw.githubusercontent.com/aljrico/blog/master/_posts/rmarkdown/genetic-algorithms_files/figure-html/unnamed-chunk-8-1.png" 
+     class="center" 
+     
+     />
+
+
+<p>Note that this plot is in logarithmic scale. See how rapidly the computational requirements increase over the difficulty of the problem.</p>
+<hr>
+<p>Now the interesting point is to compare the performance of our models with the random selection, as shown in the figure below. In this graph can be seen how much better the random selection performs, compared to our models. This is kind of disencouraging at first sight, but note that as we increase the difficulty of the problem, our models start to be relatively more useful and eventually surpasing the power of randomness.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">df <span style="color:#f92672">%&gt;%</span>
+	<span style="color:#a6e22e">filter</span>(nqueens <span style="color:#f92672">!=</span> <span style="color:#ae81ff">13</span> <span style="color:#f92672">&amp;</span> nqueens <span style="color:#f92672">!=</span> <span style="color:#ae81ff">14</span> <span style="color:#f92672">&amp;</span> nqueens <span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">3</span>) <span style="color:#f92672">%&gt;%</span>
+	<span style="color:#a6e22e">filter</span>(mutate <span style="color:#f92672">!=</span><span style="color:#ae81ff">0.01</span> <span style="color:#f92672">&amp;</span> mutate <span style="color:#f92672">!=</span><span style="color:#ae81ff">0.05</span>) <span style="color:#f92672">%&gt;%</span>
+	<span style="color:#a6e22e">ggplot</span>(<span style="color:#a6e22e">aes</span>(x<span style="color:#f92672">=</span><span style="color:#a6e22e">as.factor</span>(nqueens), y <span style="color:#f92672">=</span> <span style="color:#a6e22e">log</span>(ind), fill <span style="color:#f92672">=</span> <span style="color:#a6e22e">as.factor</span>(model))) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">geom_violin</span>(bw <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">scale_fill_viridis</span>(discrete<span style="color:#f92672">=</span><span style="color:#66d9ef">TRUE</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">labs</span>(x <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Number of Queens&#34;</span>, y <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Log(Individuals)&#34;</span>, fill <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Model&#34;</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">theme_bw</span>()
+</code></pre></div><p><img src="rmarkdown/genetic-algorithms_files/figure-html/unnamed-chunk-9-1.png" alt=""><!-- raw HTML omitted --></p>
+<!-- raw HTML omitted -->
+<p>These results might reinforce the idea that complex optimisation schemes such as <em>Genetic Algorithms</em> might be useful just for extremely complex problems. In our case, for a number of queens greater than $10$.</p>
+<h2 id="time-evolution-of-fitness">Time Evolution of Fitness</h2>
+<p>At first sight, the utility of this measurement might not appear so obvious, but it may be remarkable to know whether a population of solutions tends to improve consistently from generation to generation or it justs bounds randomly until some lucky guy hits the jackpot and it just happens to be the perfect solution. Ideally, a proper model should provide a steady ascending curve describing the average fitness of the population across generations.</p>
+<!-- raw HTML omitted -->
+<h1 id="conclusions">Conclusions</h1>
+<p>Along this article, we have seen the implications of each decision made when constructing a genetic algorithm model. We have noticed how unalike the performance can be when using differnet survival models and how differently they interact with mutation.</p>
+<p>For lower number of queens, we have noticed the superiority of the <em>Kill Half of the Population</em> and <em>Recursive Adam &amp; Eve</em> models over the the <em>Great Tournament</em>; despite that random selection outperformed all of them. From number of queens higher than $10$ the results have shown a more unpredictable behaviour, and is not quite clear whether or not made-up models as ours are more useful than simple random trial and error, but the results are quite encouraging, and with theh gradual increase in overall fitness in the population, is not unreasonable to sugggest that the model would perform much better than randomness for even higher number of queens.</p>
+<p>The parameters involved &ndash; such as <em>mutation probability</em> &ndash; have been of great importance for the most elitistic model (the <em>Recursive Adam &amp; Eve</em>) but of little importance for the other two.</p>
+<p>This thought opens up another point of the results that ought to be considered. The main parameter studied in this project has been the <em>mutation probability</em>, and they have not shown quite clearly whether this parameter has a relevant effect on the performance of the models.  The common characteristic of each of the models was their &ldquo;crossover&rdquo;. Moreover, the mutation probability, in the way that has been created, can be thought as the probability that the crossover does not actually occur when producing a new child; and it is just created randomly. This leads to the conclusion that it is not plainly clear whether our &ldquo;crossover&rdquo; method does have a relevant effect in the developement of future generations or not. The only exception for that has been showed when using very little mutation probability on the <code>allbut2</code> model; in that case the program got stuck in local minima partly as a cause of this &ldquo;crossover&rdquo;. Nevertheless, occasional solutions have been found using the <code>allbut2</code> with a moderate mutation probability ($0.25 &lt; p &lt; 0.75$) that largely outperformed the rest of the models. In some sense, we can think that this model, using this &ldquo;crossover&rdquo; is so elitistic that converges rapidly to a solution, regardless of whether it is perfect or not; so it is not strange that sometimes finds a perfect solution faster than the rest.</p>
+<p>We do not have clear enough results to conclude whether or not these Genetic Algorithm models are more useful finding <strong>N-Queens</strong> solutions than a random trial and error, for higher number of queens. And it is clear than the trial and error performs far better than our models, when applied on lower number of queens.</p>
+<p>Despite this discouragment, further investigation can be made applying these models on even higher number of queens, in different problems or using different &ldquo;crossovers&rdquo;. Future research should also dig deeper on the importance of different parameters such as the <strong>population size</strong>, for this variable makes a great difference in the performance of this and other models.</p>
+<h1 id="further-reading">Further Reading</h1>
+<p>If you have enjoyed this article, you might be interested in reading further on Genetic Algorithms. Genetic Algorithms is a kind of optimisation algorithm that is englobed within the concept of metaheuristics. For anyone interested in the subject, I highly recomment the following books. I can not stress enough how useful they are.</p>
+<ul>
+<li><a href="https://amzn.to/2M0rFNr">Handbook of Metaheuristics</a></li>
+<li><a href="https://amzn.to/2wPFGsk">Handbook of Natural Computing</a></li>
+<li><a href="https://amzn.to/2wMH4Lp">The theory of Evolution Strategies</a></li>
+</ul>
+
+
+            </div>
+        </article>
+
+        <hr />
+
+        <div class="post-info">
+                <p>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-tag meta-icon"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7" y2="7"></line></svg><span class="tag"><a href="https://aljrico.com/tags/r">r</a></span><span class="tag"><a href="https://aljrico.com/tags/optimisation-algorithms">optimisation algorithms</a></span>
+                </p>
+
+            <p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>6505 Words</p>
+
+            <p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>2018-09-06 01:00 &#43;0100</p>
+        </div>
+
+        
+            <div class="pagination">
+                <div class="pagination__title">
+                    <span class="pagination__title-h"></span>
+                    <hr />
+                </div>
+
+                <div class="pagination__buttons">
+                    
+                        <span class="button previous">
+                            <a href="https://aljrico.com/posts/2018/11/my-first-r-package-harrypotter/">
+                                <span class="button__icon">←</span>
+                                <span class="button__text">My First R Package: harrypotter</span>
+                            </a>
+                        </span>
+                    
+
+                    
+                        <span class="button next">
+                            <a href="https://aljrico.com/posts/1/01/testing-financial-strategies-with-r-stock-picking/">
+                                <span class="button__text">Testing Financial Strategies with R: Stock Picking</span>
+                                <span class="button__icon">→</span>
+                            </a>
+                        </span>
+                    
+                </div>
+            </div>
+        
+    </main>
+
+            </div>
+
+            
+                <footer class="footer">
+    <div class="footer__inner">
+        <div class="footer__content">
+            <span>&copy; 2020</span>
+            
+                <span><a href="https://aljrico.com/">Alejandro Jiménez Rico</a></span>
+            
+            <span> <a href="https://aljrico.com/posts/index.xml" target="_blank" title="rss"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-rss"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg></a></span>
+        </div>
+    </div>
+    <div class="footer__inner">
+        <div class="footer__content">
+            <span>Made with way too much &#9749;</span>
+        </div>
+    </div>
+</footer>
+
+            
+        </div>
+
+        
+
+
+
+
+<script type="text/javascript" src="https://aljrico.com/bundle.min.dc716e9092c9820b77f96da294d0120aeeb189b5bcea9752309ebea27fd53bbe6b13cffb2aca8ecf32525647ceb7001f76091de4199ac5a3caa432c070247f5b.js" integrity="sha512-3HFukJLJggt3&#43;W2ilNASCu6xibW86pdSMJ6&#43;on/VO75rE8/7KsqOzzJSVkfOtwAfdgkd5BmaxaPKpDLAcCR/Ww=="></script>
+
+
+
+    </body>
+</html>

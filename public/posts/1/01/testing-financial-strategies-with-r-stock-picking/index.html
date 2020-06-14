@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="author" content="Alejandro Jiménez Rico ">
+<meta name="description" content="One of the most common financial advices that you can hear in every christmas meal is that you should be saving a fixed amount of money each month. Not only that, but you should avoid pre-cooked schemes offered by your bank and simply invest your savings in the stock market. Investing in the U.S. market or even the global stock market has been a wise decision if you look at the long term (more than 10 years), even if you invested in peak of any pre-crisis crest." />
+<meta name="keywords" content="" />
+<meta name="robots" content="noodp" />
+<meta name="theme-color" content="#252627" />
+<link rel="canonical" href="https://aljrico.com/posts/1/01/testing-financial-strategies-with-r-stock-picking/" />
+
+
+    <title>
+        
+            Testing Financial Strategies with R: Stock Picking :: Alejandro J Rico  — Hello Friend NG Theme
+        
+    </title>
+
+
+
+<link href="https://cdnjs.cloudflare.com/ajax/libs/flag-icon-css/3.2.1/css/flag-icon.min.css" rel="stylesheet"
+    type="text/css">
+
+
+
+<link rel="stylesheet" href="https://aljrico.com/main.435bbdd5eb7d91e6110f02e36297276498e5269f94d60e15cb192dbff8fec07f.css">
+
+
+
+
+    <link rel="apple-touch-icon" sizes="180x180" href="https://aljrico.com/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="https://aljrico.com/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="https://aljrico.com/favicon-16x16.png">
+    <link rel="manifest" href="https://aljrico.com/site.webmanifest">
+    <link rel="mask-icon" href="https://aljrico.com/safari-pinned-tab.svg" color="#252627">
+    <link rel="shortcut icon" href="https://aljrico.com/favicon.ico">
+    <meta name="msapplication-TileColor" content="#252627">
+    <meta name="theme-color" content="#252627">
+
+
+
+<meta itemprop="name" content="Testing Financial Strategies with R: Stock Picking">
+<meta itemprop="description" content="One of the most common financial advices that you can hear in every christmas meal is that you should be saving a fixed amount of money each month. Not only that, but you should avoid pre-cooked schemes offered by your bank and simply invest your savings in the stock market. Investing in the U.S. market or even the global stock market has been a wise decision if you look at the long term (more than 10 years), even if you invested in peak of any pre-crisis crest.">
+
+<meta itemprop="wordCount" content="3843">
+<meta itemprop="image" content="https://aljrico.com/"/>
+
+
+
+<meta itemprop="keywords" content="" />
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:image" content="https://aljrico.com/"/>
+
+<meta name="twitter:title" content="Testing Financial Strategies with R: Stock Picking"/>
+<meta name="twitter:description" content="One of the most common financial advices that you can hear in every christmas meal is that you should be saving a fixed amount of money each month. Not only that, but you should avoid pre-cooked schemes offered by your bank and simply invest your savings in the stock market. Investing in the U.S. market or even the global stock market has been a wise decision if you look at the long term (more than 10 years), even if you invested in peak of any pre-crisis crest."/>
+
+
+
+    <meta property="og:title" content="Testing Financial Strategies with R: Stock Picking" />
+<meta property="og:description" content="One of the most common financial advices that you can hear in every christmas meal is that you should be saving a fixed amount of money each month. Not only that, but you should avoid pre-cooked schemes offered by your bank and simply invest your savings in the stock market. Investing in the U.S. market or even the global stock market has been a wise decision if you look at the long term (more than 10 years), even if you invested in peak of any pre-crisis crest." />
+<meta property="og:type" content="article" />
+<meta property="og:url" content="https://aljrico.com/posts/1/01/testing-financial-strategies-with-r-stock-picking/" />
+<meta property="og:image" content="https://aljrico.com/"/>
+
+
+
+
+
+    <meta property="article:section" content="blog" />
+
+
+
+
+
+
+
+
+
+
+    </head>
+
+    <body class="">
+        <div class="container">
+            <header class="header">
+    <span class="header__inner">
+        <a href="https://aljrico.com/" style="text-decoration: none;">
+    <div class="logo">
+        
+            <span class="logo__mark">></span>
+            <span class="logo__text">$ cd /home/</span>
+            <span class="logo__cursor" style=
+                  "
+                   background-color:#FFCC66;
+                   animation-duration:1s;">
+            </span>
+        
+    </div>
+</a>
+
+
+        <span class="header__right">
+            
+                <nav class="menu">
+    <ul class="menu__inner"><li><a href="https://aljrico.com/about/">About</a></li><li><a href="https://aljrico.com/posts/">Posts</a></li><li><a href="https://aljrico.com/projects/">Projects</a></li>
+    </ul>
+</nav>
+
+                <span class="menu-trigger">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <path d="M0 0h24v24H0z" fill="none"/>
+                        <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"/>
+                    </svg>
+                </span>
+            
+
+            <span class="theme-toggle unselectable"><svg class="theme-toggler" width="24" height="24" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M22 41C32.4934 41 41 32.4934 41 22C41 11.5066 32.4934 3 22
+  3C11.5066 3 3 11.5066 3 22C3 32.4934 11.5066 41 22 41ZM7 22C7
+  13.7157 13.7157 7 22 7V37C13.7157 37 7 30.2843 7 22Z"/>
+</svg>
+</span>
+        </span>
+    </span>
+</header>
+
+
+            <div class="content">
+                
+    <main class="post">
+
+        <div class="post-info">
+            <p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-clock"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>19 minutes
+
+            
+
+            </p>
+        </div>
+
+        <article>
+            <h1 class="post-title">
+                <a href="https://aljrico.com/posts/1/01/testing-financial-strategies-with-r-stock-picking/">Testing Financial Strategies with R: Stock Picking</a>
+            </h1>
+
+            
+
+            <div class="post-content">
+                <p>One of the most common financial advices that you can hear in every christmas meal is that you should be saving a fixed amount of money each month. Not only that, but you should avoid pre-cooked schemes offered by your bank and simply invest your savings in the stock market. Investing in the U.S. market or even the global stock market has been a wise decision if you look at the long term (more than 10 years), even if you invested in peak of any pre-crisis crest.</p>
+<p>So it seems that saving some money and investing it in stocks looks like a good idea. Great. Now, which market should you invest in? Which stocks? A safer approach to that is just buying an ETF and follow the trend of some index. At the end you are putting your money in the general behaviour of the market. If the economy does well, you&rsquo;ll do well. Otherwise, you could try to figure out which firms will exceed the market. In this article I will outline a way to test different strategies to base that decision on, using quantitative analysis of the financial statements.</p>
+<p>Even though both claim to be quantitative, I need to stress the difference between what I will suggest and the famous <em>Technical Analysis</em> (TA). TA is built on historical price developments and believes that certain patterns on price history may be identified and used to predict future movements of the quotes. TA focuses on how investors&rsquo; behaviour might push prices in the future based on historical patterns.</p>
+<p>In contrast with that, <em>Fundamental Analysis</em> (FA) focuses on the firm and the value of the ownership right itself, rather than on the market price of it. It established a defined difference between <em>Value</em> and <em>Price</em>. And it believes that the <em>Price</em> tends to reflect <em>Value</em> in the long term. Hence, it claims that the fair value can be computed from the future cash flows, debt, strategic position or future plans.</p>
+<p>There is a huge and broad field on fundamental analysis that covers a lot of different perspectives of a firm; some of them quantitative and some others qualitative. One of the quantitative is the study of the financial statements of the firms.</p>
+<p>Now, we&rsquo;ll get down to business.</p>
+<hr>
+<h1 id="retrieving-data">Retrieving Data</h1>
+<p>In order to begin, we need data. We want to try out how we can compute the financial statements of firms to decide in which we should invest our savings. Therefore, we need those financial statements.</p>
+<p>From now on, we will be making use of some R packages:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r"><span style="color:#a6e22e">library</span>(tidyverse)
+<span style="color:#a6e22e">library</span>(data.table)
+<span style="color:#a6e22e">library</span>(quantmod)
+<span style="color:#a6e22e">library</span>(rvest)
+<span style="color:#a6e22e">library</span>(progress)
+<span style="color:#a6e22e">library</span>(lubridate)
+<span style="color:#a6e22e">library</span>(feather)
+<span style="color:#a6e22e">library</span>(zoo)
+
+</code></pre></div><p>Firstly, we need a list of the stock universe that we will be considering. For simplicity, I constructed this making use of the widest indexes of the <em>Standard &amp; Poors</em>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">getTickers <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(){
+	sp500_wiki <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">read_html</span>(
+		<span style="color:#e6db74">&#34;https://en.wikipedia.org/wiki/List_of_S%26P_500_companies&#34;</span>)
+
+	symbols_table <span style="color:#f92672">&lt;-</span> sp500_wiki <span style="color:#f92672">%&gt;%</span>
+		<span style="color:#a6e22e">html_nodes</span>(xpath<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;//*[@id=&#34;mw-content-text&#34;]/div/table[1]&#39;</span>) <span style="color:#f92672">%&gt;%</span>
+		<span style="color:#a6e22e">html_table</span>()
+
+	symbols_table <span style="color:#f92672">&lt;-</span> symbols_table[[1]]
+	tickers <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">as.character</span>(symbols_table<span style="color:#f92672">$</span>`Ticker symbol`)
+
+	sp1000_wiki <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">read_html</span>(
+		<span style="color:#e6db74">&#34;https://en.wikipedia.org/wiki/List_of_S%26P_1000_companies&#34;</span>)
+
+	symbols_table <span style="color:#f92672">&lt;-</span> sp1000_wiki <span style="color:#f92672">%&gt;%</span>
+		<span style="color:#a6e22e">html_nodes</span>(xpath<span style="color:#f92672">=</span><span style="color:#e6db74">&#39;//*[@id=&#34;mw-content-text&#34;]/div/table[3]&#39;</span>) <span style="color:#f92672">%&gt;%</span>
+		<span style="color:#a6e22e">html_table</span>()
+
+	symbols_table <span style="color:#f92672">&lt;-</span> symbols_table[[1]]
+	tickers2 <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">as.character</span>(symbols_table<span style="color:#f92672">$</span>`Ticker Symbol`)
+
+	tickers <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>(tickers,tickers2)
+
+	<span style="color:#a6e22e">for</span>(i in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span><span style="color:#a6e22e">length</span>(tickers)) tickers[[i]] <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">gsub</span>(<span style="color:#e6db74">&#39;\\.&#39;</span>, <span style="color:#e6db74">&#39;-&#39;</span>, tickers[[i]])
+
+	<span style="color:#a6e22e">return</span>(tickers)
+}
+</code></pre></div><p>With this function <code>getTickers()</code> we&rsquo;ve got a complete list of the tickers of 1500 companies, including 500 from the SP500. Now, we&rsquo;ll use these stickers to get the financial statements from each one of the companies.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">
+getFinancials <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(ticker){
+	stock <span style="color:#f92672">&lt;-</span> ticker
+	output <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">tibble</span>()
+
+	<span style="color:#a6e22e">for </span>(i in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span><span style="color:#a6e22e">length</span>(stock)) {
+		<span style="color:#a6e22e">tryCatch</span>(
+			{
+				url <span style="color:#f92672">&lt;-</span> <span style="color:#e6db74">&#34;https://finance.yahoo.com/quote/&#34;</span>
+				url <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste0</span>(url,stock[i],<span style="color:#e6db74">&#34;/financials?p=&#34;</span>,stock[i])
+				wahis.session <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">html_session</span>(url)
+				p <span style="color:#f92672">&lt;-</span>    wahis.session <span style="color:#f92672">%&gt;%</span>
+					<span style="color:#a6e22e">html_nodes</span>(xpath <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;//*[@id=&#34;Col1-1-Financials-Proxy&#34;]/section/div[3]/table&#39;</span>)<span style="color:#f92672">%&gt;%</span>
+					<span style="color:#a6e22e">html_table</span>(fill <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>)
+				IS <span style="color:#f92672">&lt;-</span> p[[1]]
+				<span style="color:#a6e22e">colnames</span>(IS) <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste</span>(IS[1,])
+				IS <span style="color:#f92672">&lt;-</span> IS[<span style="color:#f92672">-</span><span style="color:#a6e22e">c</span>(<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">5</span>,<span style="color:#ae81ff">12</span>,<span style="color:#ae81ff">20</span>,<span style="color:#ae81ff">25</span>),]
+				names_row <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste</span>(IS[,<span style="color:#ae81ff">1</span>])
+				IS <span style="color:#f92672">&lt;-</span> IS[,<span style="color:#ae81ff">-1</span>]
+				IS <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">apply</span>(IS,<span style="color:#ae81ff">2</span>,<span style="color:#a6e22e">function</span>(x){<span style="color:#a6e22e">gsub</span>(<span style="color:#e6db74">&#34;,&#34;</span>,<span style="color:#e6db74">&#34;&#34;</span>,x)})
+				IS <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">as.data.frame</span>(<span style="color:#a6e22e">apply</span>(IS,<span style="color:#ae81ff">2</span>,as.numeric))
+				<span style="color:#a6e22e">rownames</span>(IS) <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste</span>(names_row)
+				temp1 <span style="color:#f92672">&lt;-</span> IS
+				url <span style="color:#f92672">&lt;-</span> <span style="color:#e6db74">&#34;https://finance.yahoo.com/quote/&#34;</span>
+				url <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste0</span>(url,stock[i],<span style="color:#e6db74">&#34;/balance-sheet?p=&#34;</span>,stock[i])
+				wahis.session <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">html_session</span>(url)
+				p <span style="color:#f92672">&lt;-</span>    wahis.session <span style="color:#f92672">%&gt;%</span>
+					<span style="color:#a6e22e">html_nodes</span>(xpath <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;//*[@id=&#34;Col1-1-Financials-Proxy&#34;]/section/div[3]/table&#39;</span>)<span style="color:#f92672">%&gt;%</span>
+					<span style="color:#a6e22e">html_table</span>(fill <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>)
+				BS <span style="color:#f92672">&lt;-</span> p[[1]]
+				<span style="color:#a6e22e">colnames</span>(BS) <span style="color:#f92672">&lt;-</span> BS[1,]
+				BS <span style="color:#f92672">&lt;-</span> BS[<span style="color:#f92672">-</span><span style="color:#a6e22e">c</span>(<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">2</span>,<span style="color:#ae81ff">17</span>,<span style="color:#ae81ff">28</span>),]
+				names_row <span style="color:#f92672">&lt;-</span> BS[,<span style="color:#ae81ff">1</span>]
+				BS <span style="color:#f92672">&lt;-</span> BS[,<span style="color:#ae81ff">-1</span>]
+				BS <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">apply</span>(BS,<span style="color:#ae81ff">2</span>,<span style="color:#a6e22e">function</span>(x){<span style="color:#a6e22e">gsub</span>(<span style="color:#e6db74">&#34;,&#34;</span>,<span style="color:#e6db74">&#34;&#34;</span>,x)})
+				BS <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">as.data.frame</span>(<span style="color:#a6e22e">apply</span>(BS,<span style="color:#ae81ff">2</span>,as.numeric))
+				<span style="color:#a6e22e">rownames</span>(BS) <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste</span>(names_row)
+				temp2 <span style="color:#f92672">&lt;-</span> BS
+				url <span style="color:#f92672">&lt;-</span> <span style="color:#e6db74">&#34;https://finance.yahoo.com/quote/&#34;</span>
+				url <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste0</span>(url,stock[i],<span style="color:#e6db74">&#34;/cash-flow?p=&#34;</span>,stock[i])
+				wahis.session <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">html_session</span>(url)
+				p <span style="color:#f92672">&lt;-</span>    wahis.session <span style="color:#f92672">%&gt;%</span>
+					<span style="color:#a6e22e">html_nodes</span>(xpath <span style="color:#f92672">=</span> <span style="color:#e6db74">&#39;//*[@id=&#34;Col1-1-Financials-Proxy&#34;]/section/div[3]/table&#39;</span>)<span style="color:#f92672">%&gt;%</span>
+					<span style="color:#a6e22e">html_table</span>(fill <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>)
+				CF <span style="color:#f92672">&lt;-</span> p[[1]]
+				<span style="color:#a6e22e">colnames</span>(CF) <span style="color:#f92672">&lt;-</span> CF[1,]
+				CF <span style="color:#f92672">&lt;-</span> CF[<span style="color:#f92672">-</span><span style="color:#a6e22e">c</span>(<span style="color:#ae81ff">1</span>,<span style="color:#ae81ff">3</span>,<span style="color:#ae81ff">11</span>,<span style="color:#ae81ff">16</span>),]
+				names_row <span style="color:#f92672">&lt;-</span> CF[,<span style="color:#ae81ff">1</span>]
+				CF <span style="color:#f92672">&lt;-</span> CF[,<span style="color:#ae81ff">-1</span>]
+				CF <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">apply</span>(CF,<span style="color:#ae81ff">2</span>,<span style="color:#a6e22e">function</span>(x){<span style="color:#a6e22e">gsub</span>(<span style="color:#e6db74">&#34;,&#34;</span>,<span style="color:#e6db74">&#34;&#34;</span>,x)})
+				CF <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">as.data.frame</span>(<span style="color:#a6e22e">apply</span>(CF,<span style="color:#ae81ff">2</span>,as.numeric))
+				<span style="color:#a6e22e">rownames</span>(CF) <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste</span>(names_row)
+				temp3 <span style="color:#f92672">&lt;-</span> CF
+				<span style="color:#75715e">#assign(paste0(stock[i],&#39;.f&#39;),value = list(IS = temp1,BS = temp2,CF = temp3),envir = parent.frame())</span>
+				total_df <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">as.data.frame</span>(<span style="color:#a6e22e">rbind</span>(temp1,temp2,temp3))
+				total_df<span style="color:#f92672">$</span>value <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">rownames</span>(total_df)
+				<span style="color:#a6e22e">for</span>(k in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span><span style="color:#a6e22e">length</span>(total_df<span style="color:#f92672">$</span>value)) total_df<span style="color:#f92672">$</span>value[[k]] <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">gsub</span>(<span style="color:#e6db74">&#34; &#34;</span>, <span style="color:#e6db74">&#34;&#34;</span>,total_df<span style="color:#f92672">$</span>value[[k]])
+				financial_camps <span style="color:#f92672">&lt;-</span> total_df<span style="color:#f92672">$</span>value
+				df <span style="color:#f92672">&lt;-</span> total_df <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">t</span>()
+				df <span style="color:#f92672">&lt;-</span> df[<span style="color:#f92672">!</span><span style="color:#a6e22e">rownames</span>(df) <span style="color:#f92672">%in%</span> <span style="color:#a6e22e">c</span>(<span style="color:#e6db74">&#34;value&#34;</span>),]
+				dates <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">rownames</span>(df)
+				df <span style="color:#f92672">&lt;-</span> df <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">data.table</span>()
+				<span style="color:#a6e22e">colnames</span>(df) <span style="color:#f92672">&lt;-</span> financial_camps
+				df<span style="color:#f92672">$</span>date <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">mdy</span>(dates)
+				df<span style="color:#f92672">$</span>firm <span style="color:#f92672">&lt;-</span> stock[[i]]
+			},
+			error <span style="color:#f92672">=</span> <span style="color:#a6e22e">function</span>(cond){
+				<span style="color:#a6e22e">message</span>(stock[i], <span style="color:#e6db74">&#34;Give error &#34;</span>,cond)
+			}
+		)
+		df<span style="color:#a6e22e">[is.na</span>(df)] <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0</span>
+		output <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">rbind</span>(output, df)
+	}
+	<span style="color:#a6e22e">return</span>(output)
+}
+</code></pre></div><p>I know it looks messy, but it outputs all the financial statements available in Yahoo Finance for almost every ticker you input and it processes the data to yield it <a href="https://vita.had.co.nz/papers/tidy-data.pdf">tidy</a>.</p>
+<p>Anagolously, we want to get the historical prices of each company.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">getPrices <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(tickers, from <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;1950-01-01&#34;</span>){
+	stock_prices <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">new.env</span>()
+	<span style="color:#a6e22e">getSymbols</span>(tickers, src <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;yahoo&#34;</span>, from <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;1950-01-01&#34;</span>, auto.assign <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>, env <span style="color:#f92672">=</span> stock_prices)
+
+	all_prices <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">tibble</span>()
+
+	<span style="color:#a6e22e">for</span>(i in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span><span style="color:#a6e22e">length</span>(tickers)){
+		raw_df <span style="color:#f92672">&lt;-</span> stock_prices[[tickers[[i]]]][,<span style="color:#ae81ff">6</span>] <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">data.frame</span>()
+		dates <span style="color:#f92672">&lt;-</span> raw_df <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">row.names</span>() <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">as.Date</span>()
+		prices <span style="color:#f92672">&lt;-</span> raw_df[,<span style="color:#ae81ff">1</span>]
+
+		new_df <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">data.frame</span>(price <span style="color:#f92672">=</span> <span style="color:#a6e22e">as.numeric</span>(prices), date <span style="color:#f92672">=</span> dates) <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">data.table</span>()
+
+		new_df<span style="color:#f92672">$</span>firm <span style="color:#f92672">&lt;-</span> tickers[[i]]
+
+		all_prices <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">rbind</span>(all_prices,new_df)
+	}
+	<span style="color:#a6e22e">return</span>(all_prices)
+}
+</code></pre></div><p>Now we need to combine these two big sets. The financial data and the price history. The way I managed to put them together is not the most memory efficient, but it tries to avoid time-dependent biases. Let me show it.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">getMerge <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(prices, financials){
+
+	<span style="color:#75715e"># Get common days</span>
+	k <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">1</span>
+	absences <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">which</span>(<span style="color:#f92672">!</span>(financials<span style="color:#f92672">$</span>date <span style="color:#f92672">%in%</span> prices<span style="color:#f92672">$</span>date))
+	<span style="color:#a6e22e">while</span>(<span style="color:#a6e22e">sum</span>(<span style="color:#f92672">!</span>(<span style="color:#a6e22e">unique</span>(financials<span style="color:#f92672">$</span>date) <span style="color:#f92672">%in%</span> <span style="color:#a6e22e">unique</span>(prices<span style="color:#f92672">$</span>date))) <span style="color:#f92672">&gt;</span> <span style="color:#ae81ff">0</span>){
+		count <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">sum</span>(<span style="color:#f92672">!</span>(<span style="color:#a6e22e">unique</span>(financials<span style="color:#f92672">$</span>date) <span style="color:#f92672">%in%</span> <span style="color:#a6e22e">unique</span>(prices<span style="color:#f92672">$</span>date)))
+		financials<span style="color:#f92672">$</span>date[[absences[k]]] <span style="color:#f92672">&lt;-</span> financials<span style="color:#f92672">$</span>date[[absences[k]]] <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>
+		<span style="color:#a6e22e">if</span>(<span style="color:#a6e22e">sum</span>(<span style="color:#f92672">!</span>(<span style="color:#a6e22e">unique</span>(financials<span style="color:#f92672">$</span>date) <span style="color:#f92672">%in%</span> <span style="color:#a6e22e">unique</span>(prices<span style="color:#f92672">$</span>date))) <span style="color:#f92672">&lt;</span> count) k <span style="color:#f92672">&lt;-</span> k <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>
+	}
+
+	stocks <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">unique</span>(prices<span style="color:#f92672">$</span>firm)
+	tidy_merged <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">tibble</span>()
+	merged <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">left_join</span>(prices,financials, by <span style="color:#f92672">=</span> <span style="color:#a6e22e">c</span>(<span style="color:#e6db74">&#34;date&#34;</span>, <span style="color:#e6db74">&#34;firm&#34;</span>))
+	<span style="color:#a6e22e">for</span>(s in stocks){
+		df <span style="color:#f92672">&lt;-</span> merged <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">filter</span>(firm <span style="color:#f92672">==</span> s)
+		tidy_merged <span style="color:#f92672">&lt;-</span> df <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">na.locf</span>() <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">na.omit</span>() <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">distinct</span>() <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">as_tibble</span>() <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">rbind</span>(tidy_merged)
+	}
+
+	tidy_merged<span style="color:#f92672">$</span>date <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">as.Date</span>(tidy_merged<span style="color:#f92672">$</span>date)
+	tidy_merged<span style="color:#f92672">$</span>firm <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">as.factor</span>(tidy_merged<span style="color:#f92672">$</span>firm)
+	cols <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">colnames</span>(tidy_merged)
+	<span style="color:#a6e22e">for</span>(c in cols) <span style="color:#a6e22e">if</span>(<span style="color:#a6e22e">is.character</span>(tidy_merged[[c]])) tidy_merged[[c]] <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">as.numeric</span>(tidy_merged[[c]])
+
+	tidy_merged <span style="color:#f92672">&lt;-</span> tidy_merged <span style="color:#f92672">%&gt;%</span>  <span style="color:#a6e22e">distinct</span>()
+
+	<span style="color:#a6e22e">return</span>(tidy_merged)
+}
+</code></pre></div><p>The thing is that we want to simulate what a normal decision making would be. That means that you wake up today, run the code and can see the price closed tomorrow and the last financial statements published. And most of the time tomorrow the price would have changed but not the financial statements.</p>
+<table>
+<thead>
+<tr>
+<th>price</th>
+<th>date</th>
+<th>firm</th>
+<th>TotalRevenue</th>
+<th>CostofRevenue</th>
+<th>GrossProfit</th>
+<th>ResearchDevelopment</th>
+<th>SellingGeneralandAdministrative</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>16.11</td>
+<td>2015-06-01</td>
+<td>ANGO</td>
+<td>352392</td>
+<td>180738</td>
+<td>171654</td>
+<td>26594</td>
+<td>112382</td>
+</tr>
+<tr>
+<td>16.08</td>
+<td>2015-06-02</td>
+<td>ANGO</td>
+<td>352392</td>
+<td>180738</td>
+<td>171654</td>
+<td>26594</td>
+<td>112382</td>
+</tr>
+<tr>
+<td>16.39</td>
+<td>2015-06-03</td>
+<td>ANGO</td>
+<td>352392</td>
+<td>180738</td>
+<td>171654</td>
+<td>26594</td>
+<td>112382</td>
+</tr>
+<tr>
+<td>16.07</td>
+<td>2015-06-04</td>
+<td>ANGO</td>
+<td>352392</td>
+<td>180738</td>
+<td>171654</td>
+<td>26594</td>
+<td>112382</td>
+</tr>
+<tr>
+<td>16.26</td>
+<td>2015-06-05</td>
+<td>ANGO</td>
+<td>352392</td>
+<td>180738</td>
+<td>171654</td>
+<td>26594</td>
+<td>112382</td>
+</tr>
+<tr>
+<td>16.1</td>
+<td>2015-06-08</td>
+<td>ANGO</td>
+<td>352392</td>
+<td>180738</td>
+<td>171654</td>
+<td>26594</td>
+<td>112382</td>
+</tr>
+</tbody>
+</table>
+<p>So this table gives you a glimpse of how the database looks like.</p>
+<p>Now we have all custom functions that we need to retrieve and store all the data that we are going to need. As you might have supsected already, this is <em>a lot</em> of data. It blows up the RAM of my laptop and most certainly will do the same with yours. In order to avoid that I just decided to create a folder and save all the data in multiple files, so we&rsquo;ll load one at a time when needed.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">tickers <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">getTickers</span>(index <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;all&#34;</span>)
+
+pb <span style="color:#f92672">&lt;-</span> progress_bar<span style="color:#f92672">$</span><span style="color:#a6e22e">new</span>(total <span style="color:#f92672">=</span> <span style="color:#a6e22e">length</span>(tickers))
+
+<span style="color:#a6e22e">for</span>(t in tickers){
+	<span style="color:#a6e22e">tryCatch</span>({
+		fins <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">getFinancials</span>(t)
+		prices <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">getPrices</span>(t)
+		whole_data <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">getMerge</span>(financials <span style="color:#f92672">=</span> fins, prices <span style="color:#f92672">=</span> prices)
+		path <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste0</span>(<span style="color:#e6db74">&#34;data/&#34;</span>,t)
+		<span style="color:#a6e22e">write_feather</span>(whole_data,path)
+	}, error<span style="color:#f92672">=</span><span style="color:#a6e22e">function</span>(e){})
+
+	pb<span style="color:#f92672">$</span><span style="color:#a6e22e">tick</span>()
+}
+</code></pre></div><h1 id="defining-investment-strategies">Defining Investment Strategies</h1>
+<p>The broad investment strategy that I have defined for this test is the following: At the beginning of each month, an investor saves up some fixed amount of money and invests it in stocks. Which stocks will be decided based upon different more specific strategies that will be tested, but this is the general scheme.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">invest <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(method, data, date, amount_to_invest <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>, stocks_owned, specificity <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>){
+	d <span style="color:#f92672">&lt;-</span> date
+	stocks_available <span style="color:#f92672">&lt;-</span> data <span style="color:#f92672">%&gt;%</span>
+											<span style="color:#a6e22e">filter</span>(date <span style="color:#f92672">==</span> d) <span style="color:#f92672">%&gt;%</span>
+											.$firm <span style="color:#f92672">%&gt;%</span>
+											<span style="color:#a6e22e">unique</span>() <span style="color:#f92672">%&gt;%</span>
+											<span style="color:#a6e22e">as.character</span>()
+</code></pre></div><p>See that I have pasted a snippet of code that is an unclosed function. Is not a mistake, I will disclose the rest of the function very soon in many snippets for readability. Note that $specifitiy = 1$ and that it appears everywhere. I&rsquo;ll explain that later.</p>
+<h2 id="benchmark-random-selection">Benchmark: Random Selection</h2>
+<p>The more straightforwarad strategy that we could think of is the random selection. The investor just takes a random ticker from the list of available companies and invests all the money from this month into that stock. Simple as that.</p>
+<p>This is going to serve as a benchmark. It is a quite dumb one, but any strategy that is not entirely useless musts outperform this strategy. What kind of financial strategy would be one that performs as well as blindly picking stocks out of the index?</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">	<span style="color:#a6e22e">if</span>(method <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;random&#34;</span>){
+		selected_stock <span style="color:#f92672">&lt;-</span> stocks_available <span style="color:#f92672">%&gt;%</span>
+		<span style="color:#a6e22e">sample</span>(specificity, replace <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>)
+	}
+</code></pre></div><h2 id="price-earnings-ratio-per">Price Earnings Ratio (PER)</h2>
+<p>Both praised and demonized, the PER is one of the most famous financial ratios that is studied in the stock market. This metric tells you how many years you should wait to recover your investment in case you would be getting paid the proportional revenue of the company.</p>
+<p><!-- raw HTML omitted --><!-- raw HTML omitted --><!-- raw HTML omitted --></p>
+<p>It sounds kind of logic that the price of a stock should correlate with its capacitity of generating revenue. What it is a company if not a machine that inputs some money and outputs even more money? Therefore, it does not seem crazy to evaluate the <em>fair value</em> of a company based on its revenue. However, there is a lot of controversy on whether this ratio is useful or not for fundamental analysis. Amongst other things, some people claim that the revenue of a company is one of the metrics that can be more easily manipulated and hence we shouldn&rsquo;t rely any decision based on them.</p>
+<p>Considering all of that, I though it was worth testing it in our little experiment.</p>
+<p>How will we do test it? Well, it is kind of common sense in investment environments to label companies as <em>expensive</em> if they have a high PER and as <em>cheap</em> if they have a low one. Following that logic, you should buy companies with lower PER, because they are cheaper. Therefore, each month in our experiment we will sort the stock universe by its present PER in ascending order and we will invest our monthly money into the top of the list. This way we will always invest in the cheapest companies available. No more considerations.</p>
+<p>I know this is trategy is utterly simplistic and that we can not base all our fundamental-analysis-oriented stock picking in one single metric. But if this ratio holds some slight truth in its statements, it should be at least better than randomly choosing stocks. Otherwise this ratio is not giving us any useful information <em>whatsoever</em>.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">	<span style="color:#a6e22e">if</span>(method <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;per&#34;</span>){
+		selected_stock <span style="color:#f92672">&lt;-</span> data <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">filter</span>(date <span style="color:#f92672">==</span> d) <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">filter</span>(firm <span style="color:#f92672">%in%</span> stocks_available) <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">mutate</span>(per <span style="color:#f92672">=</span> price<span style="color:#f92672">*</span>CommonStock<span style="color:#f92672">/</span>TotalRevenue) <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">top_n</span>(specificity, <span style="color:#f92672">-</span>per) <span style="color:#f92672">%&gt;%</span>
+			.$firm <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">unique</span>() <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">as.character</span>()
+	}
+</code></pre></div><h2 id="enterprise-value-over-earnings-before-intereses-taxes-depreciation-and-amortization-evebitda">Enterprise Value over Earnings Before Intereses, Taxes, Depreciation and Amortization (EV/EBITDA)</h2>
+<p>The natural evolution of the PER is the EV/EBITDA, for <em>Enterprise Value over Earnings Before Intereses Taxes Depreciation and Amortization</em>. It kind of measures the same thing but in a smarter more sophisticated way. It avoids using the revenue metrics - as they are less reliable - and it takes into account more metrics to compute the Enterprise Value than simply the Price. The formula would be like this:</p>
+<p><!-- raw HTML omitted --><!-- raw HTML omitted --><!-- raw HTML omitted --></p>
+<p>Lately, it has become the new preference for simplistic fundamental analysis in order to label companies as &ldquo;cheap&rdquo; or &ldquo;expensive&rdquo;.</p>
+<p>Analogously to the PER, in this strategy we will sort the list of companies based on their present EV/EBITDA in ascending order, using the latest financial statements and &ldquo;<em>today&rsquo;s</em>&rdquo; price, at the beginning of each month. Then we just pick the top of the list as our chosen stock for this month&rsquo;s investment.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">		selected_stock <span style="color:#f92672">&lt;-</span> data <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">filter</span>(date <span style="color:#f92672">==</span> d) <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">filter</span>(firm <span style="color:#f92672">%in%</span> stocks_available) <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">mutate</span>(evebitda <span style="color:#f92672">=</span> (EarningsBeforeInterestandTaxes)<span style="color:#f92672">/</span>(price<span style="color:#f92672">*</span>CommonStock <span style="color:#f92672">+</span> PreferredStock <span style="color:#f92672">+</span> MinorityInterest <span style="color:#f92672">+</span> LongTermDebt <span style="color:#f92672">-</span> CashAndCashEquivalents)) <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">top_n</span>(specificity, evebitda) <span style="color:#f92672">%&gt;%</span>
+			.$firm <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">unique</span>() <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">as.character</span>()
+</code></pre></div><h2 id="dividends-paid-over-enterprise-value">Dividends Paid over Enterprise Value</h2>
+<p>This strategy diverges a bit from the philosophy of the other two. It is the conclusion of framing the expected returns from the investments as what you get paid from being the owner of a stock (dividents) instead of the return that you can get if you sell your stocks in the future. I&rsquo;m not saying that this strategy won&rsquo;t compute the increase in the owned stocks as a profit, but that the decision making of picking the stock is based more on that expectetions of the dividends and less in trying to forecast the future price of the stock. Is another way of stating that, acknowledging that I won&rsquo;t see the Earnings of the company, the only earnings that I consider are the revenues that the company directly yields me. i.e. the <em>Dividends</em>.</p>
+<p>Having said that, we could think as &ldquo;cheap&rdquo; a company that gives you a lot of dividends for a very small price. And we have already established a sophisticated way of computing the &ldquo;price&rdquo; of a company. So we can compute this ratio</p>
+<p><!-- raw HTML omitted --><!-- raw HTML omitted --><!-- raw HTML omitted --></p>
+<p>and simply say that the larger this number is, the better. Therefore, we do the same as always, we compute this number at the beginning of each and every month, we sort the list of companies based on this number in dreceasing order and we pick the top of the list.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">	<span style="color:#a6e22e">if</span>(method <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;dividends_ev&#34;</span>){
+		selected_stock <span style="color:#f92672">&lt;-</span> data <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">filter</span>(date <span style="color:#f92672">==</span> d) <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">filter</span>(firm <span style="color:#f92672">%in%</span> stocks_available) <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">mutate</span>(dividends_ev <span style="color:#f92672">=</span> (DividendsPaid)<span style="color:#f92672">/</span>(price<span style="color:#f92672">*</span>CommonStock <span style="color:#f92672">+</span> PreferredStock <span style="color:#f92672">+</span> MinorityInterest <span style="color:#f92672">+</span> LongTermDebt <span style="color:#f92672">-</span> CashAndCashEquivalents)) <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">top_n</span>(specificity, dividends_ev) <span style="color:#f92672">%&gt;%</span>
+			.$firm <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">unique</span>() <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">as.character</span>()
+	}
+</code></pre></div><h2 id="combined-dividends-and-ebitda">Combined Dividends and EBITDA</h2>
+<p>Since we&rsquo;ve got explained some quite convincing ideas, I thought that would be interesting to put them together in one combined strategy that I call <em>Dividends and Revenues</em>, for lack of a better name.</p>
+<p>The formula would be the following:</p>
+<p><!-- raw HTML omitted --><!-- raw HTML omitted --><!-- raw HTML omitted --></p>
+<p>Note that since we&rsquo;ll decide based on a ranking, this combined metric does not depend so much on scale, and it takes into account both Dividends and Revenues equally.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">	<span style="color:#a6e22e">if</span>(method <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;div_and_rev&#34;</span>){
+		selected_stock <span style="color:#f92672">&lt;-</span> data <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">filter</span>(date <span style="color:#f92672">==</span> d) <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">filter</span>(firm <span style="color:#f92672">%in%</span> stocks_available) <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">mutate</span>(div_and_rev <span style="color:#f92672">=</span> (EarningsBeforeInterestandTaxes)<span style="color:#f92672">*</span>(DividendsPaid)<span style="color:#f92672">/</span>(price<span style="color:#f92672">*</span>CommonStock <span style="color:#f92672">+</span> PreferredStock <span style="color:#f92672">+</span> MinorityInterest <span style="color:#f92672">+</span> LongTermDebt <span style="color:#f92672">-</span> CashAndCashEquivalents)) <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">top_n</span>(specificity, div_and_rev) <span style="color:#f92672">%&gt;%</span>
+			.$firm <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">unique</span>() <span style="color:#f92672">%&gt;%</span>
+			<span style="color:#a6e22e">as.character</span>()
+	}
+</code></pre></div><h1 id="investment-simulation--results">Investment Simulation &amp; Results</h1>
+<p>Remember that variable called <code>specificity</code>? From our strategy-guided sorted list of stickers that we had, we chose the top of the list. How many of that top is what <code>specificity</code> states. It is kind of risky picking just one company out of 1500, and it is a parameter that can be interesting to study on its own.</p>
+<p>I warn you that this section is going to get a bit messy. I&rsquo;ll just paste huge bunches of code that are not so easy to read because I&rsquo;ve prioritized memory efficiency and speed. So be patient or skip it and go directly to the explanation below each one</p>
+<p>Now that you are warned, here we go:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">
+simulate_multiple_strategies <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(data, amount_to_invest <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>, specificity <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>, strategies){
+
+	count_strategy <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0</span>
+
+	history_value <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>()
+	history_strategies <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>()
+	history_dates <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>()
+
+	dates <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">unique</span>(data<span style="color:#f92672">$</span>date) <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">sort</span>()
+	dates_array <span style="color:#f92672">&lt;-</span> data<span style="color:#f92672">$</span>date
+	prices_array <span style="color:#f92672">&lt;-</span> data<span style="color:#f92672">$</span>price
+	firms_array <span style="color:#f92672">&lt;-</span> data<span style="color:#f92672">$</span>firm
+	portfolio <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">tibble</span>()
+	stocks_owned <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">list</span>()
+
+	pb <span style="color:#f92672">&lt;-</span> progress_bar<span style="color:#f92672">$</span><span style="color:#a6e22e">new</span>(
+		format <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;(:spin) [:bar] :percent     eta: :eta&#34;</span>,
+		total <span style="color:#f92672">=</span> <span style="color:#a6e22e">length</span>(dates), clear <span style="color:#f92672">=</span> <span style="color:#66d9ef">FALSE</span>, width <span style="color:#f92672">=</span> <span style="color:#ae81ff">60</span>)
+
+	<span style="color:#a6e22e">for</span>(s in strategies) stocks_owned[[s]] <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">list</span>()
+
+	<span style="color:#a6e22e">for</span>(i in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span><span style="color:#a6e22e">length</span>(dates)){
+		pb<span style="color:#f92672">$</span><span style="color:#a6e22e">tick</span>()
+		d <span style="color:#f92672">&lt;-</span> dates[[i]]
+
+		pos_date <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">which</span>(dates_array <span style="color:#f92672">==</span> d)
+
+		today_price <span style="color:#f92672">&lt;-</span> prices_array[pos_date] <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">as.numeric</span>()
+		today_firm <span style="color:#f92672">&lt;-</span> firms_array[pos_date] <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">as.character</span>()
+
+		<span style="color:#a6e22e">for</span>(strategy <span style="color:#a6e22e">in </span>(strategies)){
+
+			<span style="color:#75715e"># Invest first day of each month</span>
+			<span style="color:#a6e22e">if</span>(<span style="color:#f92672">!</span>(<span style="color:#a6e22e">class</span>(<span style="color:#a6e22e">try</span>(dates[[i<span style="color:#ae81ff">-1</span>]], silent <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>)) <span style="color:#f92672">==</span> <span style="color:#e6db74">&#39;try-error&#39;</span>)){
+				<span style="color:#a6e22e">if</span>(<span style="color:#a6e22e">day</span>(dates[[i]]) <span style="color:#f92672">&lt;</span> <span style="color:#a6e22e">day</span>(dates[[i<span style="color:#ae81ff">-1</span>]])){
+					stocks_owned[[strategy]] <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">invest</span>(method <span style="color:#f92672">=</span> strategy, data <span style="color:#f92672">=</span> data, date <span style="color:#f92672">=</span> d, amount_to_invest <span style="color:#f92672">=</span> amount_to_invest, stocks_owned <span style="color:#f92672">=</span> stocks_owned[[strategy]], specificity <span style="color:#f92672">=</span> specificity)
+				}
+			}else{
+				stocks_owned[[strategy]] <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">invest</span>(method <span style="color:#f92672">=</span> strategy, data <span style="color:#f92672">=</span> data, date <span style="color:#f92672">=</span> d, amount_to_invest <span style="color:#f92672">=</span> amount_to_invest, stocks_owned <span style="color:#f92672">=</span> stocks_owned[[strategy]], specificity <span style="color:#f92672">=</span> specificity)
+			}
+
+			<span style="color:#75715e"># Compute Portfolio value</span>
+			tmp_value <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0</span>
+			tmp_benchmark <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0</span>
+
+			stocks <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">names</span>(stocks_owned[[strategy]])
+			<span style="color:#a6e22e">for</span>(n in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span><span style="color:#a6e22e">length</span>(stocks)){
+				st <span style="color:#f92672">&lt;-</span> stocks[[n]]
+				pos_firm <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">which</span>(firms_array <span style="color:#f92672">==</span> st)
+				today_price <span style="color:#f92672">&lt;-</span> prices_array<span style="color:#a6e22e">[intersect</span>(pos_date, pos_firm)]
+				tmp_value <span style="color:#f92672">&lt;-</span> tmp_value <span style="color:#f92672">+</span> <span style="color:#a6e22e">sum</span>(stocks_owned[[strategy]][[st]]<span style="color:#f92672">*</span>today_price)
+			}
+
+		history_value[[i <span style="color:#f92672">+</span> count_strategy]] <span style="color:#f92672">&lt;-</span> tmp_value
+		history_strategies[[i <span style="color:#f92672">+</span> count_strategy]] <span style="color:#f92672">&lt;-</span> strategy
+		history_dates[[i <span style="color:#f92672">+</span> count_strategy]] <span style="color:#f92672">&lt;-</span> d
+		count_strategy <span style="color:#f92672">&lt;-</span> count_strategy <span style="color:#f92672">+</span> <span style="color:#ae81ff">1</span>
+		}
+	}
+	results <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">data.table</span>(value <span style="color:#f92672">=</span> history_value,
+										strategy <span style="color:#f92672">=</span> history_strategies,
+										date <span style="color:#f92672">=</span> <span style="color:#a6e22e">as.Date</span>(history_dates)) <span style="color:#f92672">%&gt;%</span>
+		<span style="color:#a6e22e">na.omit</span>()
+
+	<span style="color:#a6e22e">return</span>(<span style="color:#a6e22e">list</span>(results <span style="color:#f92672">=</span> results, portfolio <span style="color:#f92672">=</span> stocks_owned))
+}
+</code></pre></div><p>Long story short, this code implements many strategies and stores the value of their simulated portfolios in a daily basis. This way we&rsquo;ve got the whole daily time evolution of the value of each strategy from the beginning.</p>
+<p>Now, since we want to be memmory efficient, we just load a random subset of the universe of available stocks. Instead of 1500, we take 100, we set a specificity of 25 and compute the simulation</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">n_stocks <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">100</span>
+specificity <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">25</span>
+
+strategies_list <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>(<span style="color:#e6db74">&#34;random&#34;</span>, <span style="color:#e6db74">&#34;per&#34;</span>, <span style="color:#e6db74">&#34;evebitda&#34;</span>, <span style="color:#e6db74">&#34;dividends_ev&#34;</span>, <span style="color:#e6db74">&#34;div_and_rev&#34;</span>)
+
+
+	stocks_universe <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">getTickers</span>(<span style="color:#e6db74">&#34;all&#34;</span>) <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">sample</span>(n_stocks) <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">intersect</span>(<span style="color:#a6e22e">list.files</span>(<span style="color:#e6db74">&#34;data/&#34;</span>))
+	files <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste0</span>(<span style="color:#e6db74">&#34;data/&#34;</span>,stocks_universe)
+	dt <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">rbindlist</span>(<span style="color:#a6e22e">lapply</span>(files, read_feather)) <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">filter</span>(price <span style="color:#f92672">&gt;=</span> <span style="color:#ae81ff">0.1</span>) <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">data.table</span>()
+	investment <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">simulate_multiple_strategies_fasto</span>(data <span style="color:#f92672">=</span> dt,
+																									 amount_to_invest <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>,
+																									 strategies <span style="color:#f92672">=</span> strategies_list,
+																									 specificity <span style="color:#f92672">=</span> specificity)
+
+</code></pre></div><p>And plot the results:</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">investment<span style="color:#f92672">$</span>result <span style="color:#f92672">%&gt;%</span>
+	<span style="color:#a6e22e">ggplot</span>(<span style="color:#a6e22e">aes</span>(x <span style="color:#f92672">=</span> date, y <span style="color:#f92672">=</span> value, colour <span style="color:#f92672">=</span> strategy)) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">geom_line</span>(size <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">theme_minimal</span>() <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">scale_colour_hp</span>(discrete <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>, house <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;ravenclaw&#34;</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">ylab</span>(<span style="color:#e6db74">&#34;Value&#34;</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">xlab</span>(<span style="color:#e6db74">&#34;&#34;</span>)
+</code></pre></div><!-- raw HTML omitted -->
+<p>I know, I know. We are just taking a random subset of 100 companies instead of those juicy 1500. And the results obtained from here could be utterly different if we repeat the experiment for a different 100 companies.</p>
+<p>In order to address that, we can simply iterate that process with new randomly selected universe of stocks every time and compute the difference in the yearly return of each simulation.</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">
+<span style="color:#75715e"># Compute Internal Rate of Return</span>
+irr <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(cash_flows, frequency <span style="color:#f92672">=</span> <span style="color:#ae81ff">30.5</span>, error <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.01</span>){
+	l <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">length</span>(cash_flows)
+	cf_zero <span style="color:#f92672">&lt;-</span> cash_flows[[1]]
+	cf_final <span style="color:#f92672">&lt;-</span> cash_flows[[l]]
+	irr_bot <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">-100</span>
+	irr_top <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">100</span>
+	npv <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0</span>
+	<span style="color:#a6e22e">while</span>(<span style="color:#a6e22e">abs</span>(cf_final <span style="color:#f92672">-</span> npv) <span style="color:#f92672">&gt;</span> error){
+		npv <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">0</span>
+		irr_trial <span style="color:#f92672">&lt;-</span> (irr_bot<span style="color:#f92672">+</span>irr_top)<span style="color:#f92672">/</span><span style="color:#ae81ff">2</span>
+		<span style="color:#a6e22e">for</span>(i in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>(<span style="color:#a6e22e">floor</span>(l<span style="color:#f92672">/</span>frequency))){
+			npv <span style="color:#f92672">&lt;-</span> npv <span style="color:#f92672">+</span> cf_zero<span style="color:#f92672">*</span>((<span style="color:#ae81ff">1</span> <span style="color:#f92672">+</span> irr_trial<span style="color:#f92672">/</span><span style="color:#ae81ff">100</span>)<span style="color:#a6e22e">^</span>(i))
+		}
+		<span style="color:#a6e22e">if</span>(cf_final <span style="color:#f92672">&gt;</span> npv) irr_bot <span style="color:#f92672">&lt;-</span> irr_trial
+		<span style="color:#a6e22e">if</span>(cf_final <span style="color:#f92672">&lt;</span> npv) irr_top <span style="color:#f92672">&lt;-</span> irr_trial
+	}
+	<span style="color:#a6e22e">return</span>(irr_trial<span style="color:#f92672">/</span><span style="color:#ae81ff">100</span>)
+}
+
+<span style="color:#75715e"># Compute relative Difference between the Return of the portfolio and the benchmark</span>
+alpha_ret <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(portfolio, benchmark){
+	r_port <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">irr</span>(portfolio)
+	r_ben <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">irr</span>(benchmark)
+	a <span style="color:#f92672">&lt;-</span> (r_port <span style="color:#f92672">-</span> r_ben)<span style="color:#f92672">/</span>(r_ben)
+	<span style="color:#a6e22e">return</span>(a)
+}
+
+<span style="color:#75715e"># Compute beta with the benchmark</span>
+beta <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(portfolio, benchmark){
+	<span style="color:#a6e22e">return</span>(<span style="color:#a6e22e">cov</span>(portfolio,benchmark<span style="color:#f92672">/</span><span style="color:#a6e22e">sd</span>(benchmark)^2))
+}
+
+<span style="color:#75715e"># Compute Jensen&#39;s alpha with the benchmark</span>
+alpha <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">function</span>(portfolio, benchmark){
+	r_port <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">irr</span>(portfolio)
+	r_ben <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">irr</span>(benchmark)
+	a <span style="color:#f92672">&lt;-</span> (r_port <span style="color:#f92672">-</span> <span style="color:#a6e22e">beta</span>(portfolio, benchmark)<span style="color:#f92672">*</span>r_ben)
+	<span style="color:#a6e22e">return</span>(a)
+}
+
+trials <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">50</span>
+n_stocks <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">100</span>
+specificity <span style="color:#f92672">&lt;-</span> <span style="color:#ae81ff">25</span>
+alpha_result <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">list</span>()
+diff_result <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">list</span>()
+
+strategies_list <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">c</span>(<span style="color:#e6db74">&#34;random&#34;</span>, <span style="color:#e6db74">&#34;per&#34;</span>, <span style="color:#e6db74">&#34;evebitda&#34;</span>, <span style="color:#e6db74">&#34;dividends_ev&#34;</span>, <span style="color:#e6db74">&#34;div_and_rev&#34;</span>)
+
+<span style="color:#a6e22e">for</span>(t in <span style="color:#ae81ff">1</span><span style="color:#f92672">:</span>trials){
+
+	stocks_universe <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">getTickers</span>(<span style="color:#e6db74">&#34;all&#34;</span>) <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">sample</span>(n_stocks) <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">intersect</span>(<span style="color:#a6e22e">list.files</span>(<span style="color:#e6db74">&#34;data/&#34;</span>))
+	files <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">paste0</span>(<span style="color:#e6db74">&#34;data/&#34;</span>,stocks_universe)
+	dt <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">rbindlist</span>(<span style="color:#a6e22e">lapply</span>(files, read_feather)) <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">filter</span>(price <span style="color:#f92672">&gt;=</span> <span style="color:#ae81ff">0.1</span>) <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">data.table</span>()
+	investment <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">simulate_multiple_strategies_fasto</span>(data <span style="color:#f92672">=</span> dt, amount_to_invest <span style="color:#f92672">=</span> <span style="color:#ae81ff">1</span>, strategies <span style="color:#f92672">=</span> strategies_list, specificity <span style="color:#f92672">=</span> specificity)
+
+	<span style="color:#a6e22e">for</span>(s in strategies_list) {
+		diff_result[[s]][[t]] <span style="color:#f92672">&lt;-</span> <span style="color:#a6e22e">alpha_ret</span>(portfolio <span style="color:#f92672">=</span> investment[[<span style="color:#e6db74">&#34;results&#34;</span>]] <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">filter</span>(strategy <span style="color:#f92672">==</span> s) <span style="color:#f92672">%&gt;%</span> .$value,
+																	 benchmark <span style="color:#f92672">=</span> investment[[<span style="color:#e6db74">&#34;results&#34;</span>]] <span style="color:#f92672">%&gt;%</span> <span style="color:#a6e22e">filter</span>(strategy <span style="color:#f92672">==</span> <span style="color:#e6db74">&#34;random&#34;</span>) <span style="color:#f92672">%&gt;%</span> .$value
+		)
+	}
+}
+
+</code></pre></div><p>And plot the result like that</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">diff_result <span style="color:#f92672">%&gt;%</span>
+	<span style="color:#a6e22e">as_tibble</span>() <span style="color:#f92672">%&gt;%</span>
+	<span style="color:#a6e22e">melt</span>() <span style="color:#f92672">%&gt;%</span>
+	<span style="color:#a6e22e">ggplot</span>(<span style="color:#a6e22e">aes</span>(x <span style="color:#f92672">=</span> <span style="color:#a6e22e">as.factor</span>(variable), y <span style="color:#f92672">=</span> value)) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">geom_boxplot</span>(<span style="color:#a6e22e">aes</span>(fill <span style="color:#f92672">=</span> variable), colour <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;black&#34;</span>, alpha <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.35</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">geom_point</span>(<span style="color:#a6e22e">aes</span>(colour <span style="color:#f92672">=</span> variable), size <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">theme_minimal</span>() <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">xlab</span>(<span style="color:#e6db74">&#34;Strategy&#34;</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">ylab</span>(<span style="color:#e6db74">&#34;Returns Relative Difference&#34;</span>)<span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">scale_colour_hp</span>(discrete <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>, house <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;ravenclaw&#34;</span>, direction <span style="color:#f92672">=</span> <span style="color:#ae81ff">-1</span>, name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Strategy&#34;</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">scale_fill_hp</span>(discrete <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>, house <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;ravenclaw&#34;</span>, direction <span style="color:#f92672">=</span> <span style="color:#ae81ff">-1</span>, name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Strategy&#34;</span>)
+</code></pre></div><!-- raw HTML omitted -->
+<p>This plot shows the relative difference in the final yearly return between each strategy and the random. Obviously the random shows 0 difference with itself.</p>
+<p>It is common to argue that simply higher returns does not equal to a better strategy, and that we should take into account the relative risk with respect with the benchmark. Since we are using the random selection as benchmark, we can use it like that and compute the Jensen&rsquo;s Alpha for each strategy on every simulation (look the code above and note that this computation is hidden inside).</p>
+<div class="highlight"><pre style="color:#f8f8f2;background-color:#272822;-moz-tab-size:4;-o-tab-size:4;tab-size:4"><code class="language-r" data-lang="r">alpha_result <span style="color:#f92672">%&gt;%</span>
+	<span style="color:#a6e22e">as_tibble</span>() <span style="color:#f92672">%&gt;%</span>
+	<span style="color:#a6e22e">melt</span>() <span style="color:#f92672">%&gt;%</span>
+	<span style="color:#a6e22e">ggplot</span>(<span style="color:#a6e22e">aes</span>(x <span style="color:#f92672">=</span> <span style="color:#a6e22e">as.factor</span>(variable), y <span style="color:#f92672">=</span> value)) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">geom_boxplot</span>(<span style="color:#a6e22e">aes</span>(fill <span style="color:#f92672">=</span> variable), colour <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;black&#34;</span>, alpha <span style="color:#f92672">=</span> <span style="color:#ae81ff">0.35</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">geom_point</span>(<span style="color:#a6e22e">aes</span>(colour <span style="color:#f92672">=</span> variable), size <span style="color:#f92672">=</span> <span style="color:#ae81ff">2</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">theme_minimal</span>() <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">xlab</span>(<span style="color:#e6db74">&#34;Strategy&#34;</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">ylab</span>(<span style="color:#e6db74">&#34;Alpha&#34;</span>)<span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">scale_colour_hp</span>(discrete <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>, house <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;ravenclaw&#34;</span>, direction <span style="color:#f92672">=</span> <span style="color:#ae81ff">-1</span>, name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Strategy&#34;</span>) <span style="color:#f92672">+</span>
+	<span style="color:#a6e22e">scale_fill_hp</span>(discrete <span style="color:#f92672">=</span> <span style="color:#66d9ef">TRUE</span>, house <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;ravenclaw&#34;</span>, direction <span style="color:#f92672">=</span> <span style="color:#ae81ff">-1</span>, name <span style="color:#f92672">=</span> <span style="color:#e6db74">&#34;Strategy&#34;</span>)
+</code></pre></div><!-- raw HTML omitted -->
+<h1 id="conclusion--further-work">Conclusion &amp; Further Work</h1>
+<p>I don&rsquo;t want to start arguing about whether we should look at the relative difference or the alpha in order to decide the preferred strategy, I think there are better discussion on that that the one I can provide in this essay. Nevertheless, seems quite obvious that the strategies that we have used contain some truth in them, they can outperform a random selection. So using them could better than blind random selection. I&rsquo;m not sure if that is a big achievement, but it something; and can lead to further exploration of the utility of the metrics involved.</p>
+<p>There are some biases that we should be aware of. Some of those could trigger further exploration of what I&rsquo;ve done so far, trying to address them.</p>
+<ul>
+<li>
+<p>The most important one: Choosing the <code>specificity</code> parameter. The results can vary greatly if we change this parameter. Early exploration has shown me that if we set the specifity as 1, every strategy does not differ from the random, and we couldn&rsquo;t say that they add value. I most certainly will expand the article in the future exploring this issue.</p>
+</li>
+<li>
+<p>Universe of available stocks. We have chosen the lists of the standard and poors available <em>today</em>. This adds survivor bias, because we are only considering the companies that are in those lists nowadays, not back in 2014 or at every moment of the simulation. This is a problem because when we simulate being in 2014 with the information of 2014 we are not seeing the stocks that were in the lists of the SP back in 2014, but those that are present in the lists of 2018. We are using information of the future, and that is dangerous. I wouldn&rsquo;t say is a big deal, because in 4 years these lists don&rsquo;t change so much, but still.</p>
+</li>
+<li>
+<p>Time. 4 years is simply not enough to extract reliable conclusions. Even though our datasets look huge, 4 years in financial history is just a small glimpse. This time range does not include periods of crisis, bursting of bubbles or any other major financial distress. Moreover, long-term saving strategies are thought to be applied during periods of more than 10 years; so even though we are claiming to simulate a real humble investor, the results we are providing can not applied to that situation. The reason why we only have 4 years is because I haven&rsquo;t been able to retrieve older financial statements. I&rsquo;ll work on that.</p>
+</li>
+</ul>
+
+
+            </div>
+        </article>
+
+        <hr />
+
+        <div class="post-info">
+
+            <p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>3843 Words</p>
+
+            <p><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-calendar"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>0001-01-01 00:00 &#43;0000</p>
+        </div>
+
+        
+            <div class="pagination">
+                <div class="pagination__title">
+                    <span class="pagination__title-h"></span>
+                    <hr />
+                </div>
+
+                <div class="pagination__buttons">
+                    
+                        <span class="button previous">
+                            <a href="https://aljrico.com/posts/2018/09/genetic-algorithms-solving-the-n-queens-problem/">
+                                <span class="button__icon">←</span>
+                                <span class="button__text">Genetic Algorithms: Solving the N-Queens problem</span>
+                            </a>
+                        </span>
+                    
+
+                    
+                </div>
+            </div>
+        
+    </main>
+
+            </div>
+
+            
+                <footer class="footer">
+    <div class="footer__inner">
+        <div class="footer__content">
+            <span>&copy; 2020</span>
+            
+                <span><a href="https://aljrico.com/">Alejandro Jiménez Rico</a></span>
+            
+            <span> <a href="https://aljrico.com/posts/index.xml" target="_blank" title="rss"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="feather feather-rss"><path d="M4 11a9 9 0 0 1 9 9"></path><path d="M4 4a16 16 0 0 1 16 16"></path><circle cx="5" cy="19" r="1"></circle></svg></a></span>
+        </div>
+    </div>
+    <div class="footer__inner">
+        <div class="footer__content">
+            <span>Made with way too much &#9749;</span>
+        </div>
+    </div>
+</footer>
+
+            
+        </div>
+
+        
+
+
+
+
+<script type="text/javascript" src="https://aljrico.com/bundle.min.dc716e9092c9820b77f96da294d0120aeeb189b5bcea9752309ebea27fd53bbe6b13cffb2aca8ecf32525647ceb7001f76091de4199ac5a3caa432c070247f5b.js" integrity="sha512-3HFukJLJggt3&#43;W2ilNASCu6xibW86pdSMJ6&#43;on/VO75rE8/7KsqOzzJSVkfOtwAfdgkd5BmaxaPKpDLAcCR/Ww=="></script>
+
+
+
+    </body>
+</html>
