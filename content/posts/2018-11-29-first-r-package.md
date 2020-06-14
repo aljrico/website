@@ -14,7 +14,7 @@ tags:
 
 {{<image src="https://raw.githubusercontent.com/aljrico/harrypotter/master/man/figures/logo.png" position="center plain">}}
 
-[![cran version](http://www.r-pkg.org/badges/version/harrypotter)](https://cran.r-project.org/package=harrypotter)
+[![cran version](https://www.r-pkg.org/badges/version/harrypotter)](https://cran.r-project.org/package=harrypotter)
 
 I want to present you my first **R** package, [already published](https://cran.r-project.org/package=harrypotter) in CRAN. 
 
