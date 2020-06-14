@@ -1,0 +1,143 @@
+.small-projects-container {
+  display: flex;
+  flex-direction: grid;
+  flex-wrap: wrap;
+  align: right;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 auto;
+  @media only screen and (min-width: 550px) {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    flex-wrap: nowrap;
+  }
+}
+
+.small-project {
+  margin-top: 10px;
+  padding: 10px;
+  margin-right: auto;
+  img {
+    max-width: 100%;
+    height: auto;
+    border-radius: 5px;
+    &:hover {
+      transform: scale(1.4);
+      transition: transform 0.2s ease
+  }
+  }
+  h4 {
+    margin-top: 15px;
+    margin-bottom: 9px;
+    margin-right: 20px;
+  }
+  li {
+    font-size: 1.1rem;
+  }
+  p {
+    font-size: 0.9em;
+    margin-right: 5px;
+    float: left;
+    width: 100%;
+
+    @media only screen and (min-width: 550px) {
+      float: left;
+      width: 100%;
+    }
+  }
+
+  @media only screen and (min-width: 550px) {
+    float: left;
+    max-width: 31%;
+  }
+}
+
+.small-contents {
+  float: right;
+  margin-top: -5%;
+  width: 65%;
+  @media only screen and (min-width: 550px) {
+    float: right;
+    margin-top: -5%;
+    width: 65%;
+  }
+}
+
+.small-images {
+  float: left;
+  width: 100%;
+  @media only screen and (min-width: 550px) {
+    float: left;
+    width: 25%;
+  }
+  img {
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
+    margin: 0px 0;
+    float: left;
+    width: 100%;
+    max-width: 100px;
+    @media only screen and (min-width: 550px) {
+      float: left;
+      width: 100%;
+    }
+  }
+}
+
+.small-project-link {
+  font-size: 0.8em;
+  display: inline-block;
+  padding: 5px 15px;
+  background-color: transparent;
+  border: 2px solid $light-orange;
+  border-radius: 3px;
+  text-align: center;
+  outline: none;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color 0.1s ease-out,
+              background-color 0.1s ease-out,
+              border-color 0.1s ease-out;
+  $detail-color: $light-orange;
+
+  &:hover {
+    border: 2px solid $light-orange;
+    background-color: $detail-color;
+    border-color: $light-orange;
+    color: $dark-blue;
+    font-weight: 700;
+    transition: color 0.1s ease-in,
+                background-color 0.1s ease-in,
+                border-color 0.1s ease-in;
+  }
+  &:active {
+    border: 2px solid $light-orange;
+    background-color: $light-orange;
+    border-color: $dark-blue;
+    color: $dark-blue;
+    font-weight: 700;
+    transition: color 0.1s ease-in,
+                background-color 0.1s ease-in,
+                border-color 0.1s ease-in;
+  }
+}
+
+.small-project-badge {
+  font-size: 0.8em;
+  font-weight: 600;
+  display: block;
+  float: left;
+  position: absolute;
+  margin-left: 45px;
+  padding: 2px 5px;
+  border: 1px;
+  background-color: $light-orange;
+  border-color: $light-orange;
+  color: #fff;
+  border-radius: 8px;
+  text-align: center;
+  outline: none;
+  text-decoration: none;
+}

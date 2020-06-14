@@ -1,0 +1,13 @@
+{{ if .Get "title"}}
+<div class="small-project">
+  <div class="small-images">
+    <img alt="{{ .Params.title }}" src="{{ .Params.image }}" href="{{ .Params.link }}" class="plain"/>
+    {{with .Get "badge"}} <div class="small-project-badge">{{ . }}</div> {{ end }}
+  </div>
+  <div class="small-contents">
+    <h4> {{ .Params.title }} </h4>
+    <a class="small-project-link" href="{{ .Params.link }}" style="{{ .Params.style }}">Check it out</a>
+  </div>
+  <p>{{ .Params.content }}</p>
+</div>
+{{ end }}
