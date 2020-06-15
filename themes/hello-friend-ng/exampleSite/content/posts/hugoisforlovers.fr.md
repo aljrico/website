@@ -33,10 +33,10 @@ vous lisez actuellement.
 
 Suivez les instructions suivante :
 
- 1. Clonez le [dépôt de hugo](http://github.com/spf13/hugo)
+ 1. Clonez le [dépôt de hugo](https://github.com/spf13/hugo)
  2. Allez dans ce dépôt
  3. Lancez Hugo en mode serveur et compilez la documentation
- 4. Ouvrez votre navigateur sur http://localhost:1313
+ 4. Ouvrez votre navigateur sur https://localhost:1313
 
 Voici les commandes génériques correspondantes :
 
@@ -46,7 +46,7 @@ Voici les commandes génériques correspondantes :
     > 29 pages created
     > 0 tags index created
     > in 27 ms
-    > Web Server is available at http://localhost:1313
+    > Web Server is available at https://localhost:1313
     > Press ctrl+c to stop
 
 Lorsque vous avez cela, continuez le reste de ce guide sur votre version locale.
@@ -62,13 +62,13 @@ surveillance.
     > 29 pages created
     > 0 tags index created
     > in 27 ms
-    > Web Server is available at http://localhost:1313
+    > Web Server is available at https://localhost:1313
     > Watching for changes in /Users/spf13/Code/hugo/docs/content
     > Press ctrl+c to stop
 
 Ouvrez votre [éditeur favori](https://vim.spf13.com) et changer l'une des
 sources des pages de contenu.
-Open your [favorite editor](http://vim.spf13.com) and change one of the source
+Open your [favorite editor](https://vim.spf13.com) and change one of the source
 content pages. Que diriez-vous de modifier ce fichier pour *résoudre une faute
 de typo*.
 

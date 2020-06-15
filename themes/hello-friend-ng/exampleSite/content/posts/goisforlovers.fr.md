@@ -348,5 +348,5 @@ page, vous pouvez le faire comme dans l'exemple suivant :
 ```
 
 
-[go]: <http://golang.org/>
-[gohtmltemplate]: <http://golang.org/pkg/html/template/>
+[go]: <https://golang.org/>
+[gohtmltemplate]: <https://golang.org/pkg/html/template/>

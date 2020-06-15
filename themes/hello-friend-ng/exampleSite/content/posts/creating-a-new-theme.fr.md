@@ -208,7 +208,7 @@ WARN: 2014/09/29 Unable to locate layout: [404.html]
 0 categories created
 in 2 ms
 Serving pages from /Users/quoha/Sites/zafta/public
-Web Server is available at http://localhost:1313
+Web Server is available at https://localhost:1313
 Press Ctrl+C to stop
 ```
 
@@ -479,7 +479,7 @@ WARN: 2014/09/29 Unable to locate layout: [404.html theme/404.html]
 in 2 ms
 Watching for changes in /Users/quoha/Sites/zafta/content
 Serving pages from /Users/quoha/Sites/zafta/public
-Web Server is available at http://localhost:1313
+Web Server is available at https://localhost:1313
 Press Ctrl+C to stop
 INFO: 2014/09/29 File System Event: ["/Users/quoha/Sites/zafta/themes/zafta/
                                         layouts/index.html": MODIFY|ATTRIB]
@@ -558,7 +558,7 @@ $ cat public/index.html
 <html>
 <body>
   <p>hugo dit bonjour!</p>
-<script>document.write('<script src="http://'
+<script>document.write('<script src="https://'
         + (location.host || 'localhost').split(':')[0]
     + ':1313/livereload.js?mindelay=10"></'
         + 'script>')</script></body>
@@ -974,12 +974,12 @@ $ cat public/index.html
 <!DOCTYPE html>
 <html>
 <body>
-    <h1><a href="http://localhost:1313/post/theme/">
+    <h1><a href="https://localhost:1313/post/theme/">
         creating a new theme</a></h1>
-    <h1><a href="http://localhost:1313/about-time/">about</a></h1>
-    <h1><a href="http://localhost:1313/post/second-post/">second</a></h1>
-    <h1><a href="http://localhost:1313/post/premier-post/">first</a></h1>
-<script>document.write('<script src="http://'
+    <h1><a href="https://localhost:1313/about-time/">about</a></h1>
+    <h1><a href="https://localhost:1313/post/second-post/">second</a></h1>
+    <h1><a href="https://localhost:1313/post/premier-post/">first</a></h1>
+<script>document.write('<script src="https://'
         + (location.host || 'localhost').split(':')[0]
 		+ ':1313/livereload.js?mindelay=10"></'
         + 'script>')</script></body>
