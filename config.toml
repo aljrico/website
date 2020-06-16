@@ -144,3 +144,6 @@ disableHugoGeneratorInject = false
     identifier = "projects"
     name       = "Projects"
     url        = "projects/"
+    
+[footer]
+  text         = "Made with way too much &#9749;"
