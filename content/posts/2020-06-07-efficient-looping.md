@@ -7,7 +7,8 @@ toc: false
 images: 
 Cover:
 tags:
-  - untagged
+  - r
+  - programming
 ---
 
 I’d bet most R developers have - or will have - faced the issue of

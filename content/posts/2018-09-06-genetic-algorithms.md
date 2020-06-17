@@ -8,7 +8,8 @@ images:
 Cover:
 tags:
   - r
-  - optimisation algorithms
+  - programming
+  - algorithms
 ---
 
 

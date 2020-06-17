@@ -1,9 +1,14 @@
 ---
 layout: post
-title: "Testing Financial Strategies with R: Stock Picking"
-categories:
-- blog
-comments: True
+title: "Testing Financial Strategies with R"
+date: 2018-09-27
+draft: false
+toc: false
+images: 
+Cover:
+tags:
+  - r
+  - finance
 ---
 
 One of the most common financial advices that you can hear in every christmas meal is that you should be saving a fixed amount of money each month. Not only that, but you should avoid pre-cooked schemes offered by your bank and simply invest your savings in the stock market. Investing in the U.S. market or even the global stock market has been a wise decision if you look at the long term (more than 10 years), even if you invested in peak of any pre-crisis crest.
