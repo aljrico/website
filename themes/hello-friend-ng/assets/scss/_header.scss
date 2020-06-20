@@ -6,6 +6,10 @@
   position: relative;
   padding: 20px;
 
+  a:hover {
+    text-decoration: none !important;
+  }
+
   .dark-theme & {
     background: #252627;
   }

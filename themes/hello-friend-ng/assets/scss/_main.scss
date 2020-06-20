@@ -14,10 +14,11 @@ html {
 body {
   margin: 0;
   padding: 0;
-  font-family: 'Inter UI', -apple-system, BlinkMacSystemFont, "Roboto", "Segoe UI",  Helvetica, Arial, sans-serif;
+  font-family: $main-font;
   font-display: auto;
-  font-size: 1rem;
-  line-height: 1.54;
+  font-size: 1.1rem;
+  line-height: 1.5;
+  letter-spacing: 0.05em;
   background-color: $light-background;
   color: $light-color;
   text-rendering: optimizeLegibility;
@@ -34,9 +35,21 @@ body {
     font-size: 1rem;
   }
 
+  a:hover {
+    color: $dark-blue;
+    font-weight: 800;
+    text-decoration: none;
+    transition: color 0.1s ease;
+  }
+
   &.dark-theme {
     background-color: $dark-background;
     color: $dark-color;
+
+    a:hover {
+      color: $light-orange;
+    }
+
   }
 }
 
@@ -113,6 +126,17 @@ img {
   &.plain {
     box-shadow: none;
   }
+
+  &.right-floated {
+    margin-left: auto;
+    margin: 20px 0 20px 20px;
+    float: right;
+  }
+
+  &.rounded {
+    border-radius: 50%;
+    max-width: 25%;
+  }
 }
 
 figure {
@@ -175,7 +199,7 @@ figure {
 }
 
 code {
-  font-family: Consolas,Monaco,Andale Mono,Ubuntu Mono,monospace;
+  font-family: $code-font;
   font-display: auto;
   font-feature-settings: normal;
   background: $light-background-secondary;
@@ -226,7 +250,7 @@ blockquote {
 
   &:before {
     content: '”';
-    font-family: Georgia, serif;
+    font-family: $code-font;
     font-display: auto;
     font-size: 3.875rem;
     position: absolute;

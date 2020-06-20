@@ -1,5 +1,11 @@
 @charset "UTF-8";
 
+$main-font: 'Montserrat','Inter UI', -apple-system, BlinkMacSystemFont, "Roboto", "Segoe UI",  Helvetica, Arial, sans-serif;
+$code-font: 'Montserrat', 'Inter UI', Consolas,Monaco,Andale Mono,Ubuntu Mono,monospace;
+
+$post-font: $main-font;
+$title-font: $main-font;
+
 /* light theme color */
 $light-background: #fff;
 $light-background-secondary: #eaeaea;
