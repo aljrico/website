@@ -1,4 +1,68 @@
 @font-face {
+  font-family: 'Mark';
+  font-style:  normal;
+  font-display: auto;
+  font-weight: 200;
+  src: url("../fonts/Mark-Light.woff") format("woff"),
+       url("../fonts/Mark-Light.woff2") format("woff2"),
+}
+@font-face {
+  font-family: 'Mark';
+  font-style:  normal;
+  font-display: auto;
+  font-weight: 400;
+  src: url("../fonts/Mark-Regular.woff") format("woff"),
+       url("../fonts/Mark-Regular.woff2") format("woff2"),
+}
+@font-face {
+  font-family: 'Mark';
+  font-style:  italic;
+  font-display: auto;
+  font-weight: 400;
+  src: url("../fonts/Mark-Regular-Italic.woff") format("woff"),
+       url("../fonts/Mark-Regular-Italic.woff2") format("woff2"),
+}
+@font-face {
+  font-family: 'Mark';
+  font-style:  normal;
+  font-display: auto;
+  font-weight: 500;
+  src: url("../fonts/Mark-Book.woff") format("woff"),
+       url("../fonts/Mark-Book.woff2") format("woff2"),
+}
+@font-face {
+  font-family: 'Mark';
+  font-style:  normal;
+  font-display: auto;
+  font-weight: 600;
+  src: url("../fonts/Mark-Medium.woff") format("woff"),
+       url("../fonts/Mark-Medium.woff2") format("woff2"),
+}
+@font-face {
+  font-family: 'Mark';
+  font-style:  italic;
+  font-display: auto;
+  font-weight: 600;
+  src: url("../fonts/Mark-Medium-Italic.woff") format("woff"),
+       url("../fonts/Mark-Medium-Italic.woff2") format("woff2"),
+}
+@font-face {
+  font-family: 'Mark';
+  font-style:  normal;
+  font-display: auto;
+  font-weight: 800;
+  src: url("../fonts/Mark-Bold.woff") format("woff"),
+       url("../fonts/Mark-Bold.woff2") format("woff2"),
+}
+@font-face {
+  font-family: 'Mark';
+  font-style:  normal;
+  font-display: auto;
+  font-weight: 1000;
+  src: url("../fonts/Mark-Black.woff") format("woff"),
+       url("../fonts/Mark-Black.woff2") format("woff2"),
+}
+@font-face {
   font-family: 'Inter UI';
   font-style:  normal;
   font-display: auto;
