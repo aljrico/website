@@ -1,0 +1,9 @@
+{{ if .Get "src" }}
+<div class = "img-box">
+    <img 
+    src="{{ .Get "src" | safeURL }}" 
+    {{ with .Get "alt" }} alt="{{ . | plainify }}" {{ end }} class="{{ with .Get "position"}}{{ . }}{{ else -}} center {{- end }}" 
+    {{ with .Get "style" }} style="{{ . | safeCSS }}" {{ end }} {{ with .Get "width" }} width="{{ . | safeCSS }}" {{ end }}
+    {{ with .Get "height" }} height="{{ . | safeCSS }}" {{ end }} />
+</div>
+{{ end }}

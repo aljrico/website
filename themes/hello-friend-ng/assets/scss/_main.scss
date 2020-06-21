@@ -362,3 +362,26 @@ hr {
 	text-decoration: none;
 	z-index: 100000;
 }
+
+.perfect-circle {
+ border-radius: 50%;
+ height: 250px;
+ width: 250px;
+ overflow: hidden;
+ display: flex;
+ justify-content: center;
+ align-items: center;
+ float: right;
+ margin: 20px 20px 20px 20px;
+}
+
+.img-box {
+  overflow: hidden;
+}
+
+.img-box:hover {
+  img {
+    transform: scale(1.1);
+    transition: transform .5s ease;
+  }
+}
