@@ -373,6 +373,11 @@ hr {
  align-items: center;
  float: right;
  margin: 20px 20px 20px 20px;
+
+  @media #{$media-size-phone} {
+    height: 150px;
+    width: 150px;
+  }
 }
 
 .img-box {
