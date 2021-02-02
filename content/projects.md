@@ -49,3 +49,4 @@ Another type gig I enjoy partaking in during my free time has to do with researc
 Here's a selected list of some of the papers I have participated in, or I feel particularly proud of:
 
 * [Pre‐contrast CT attenuation of the thyroid gland is lower in brachycephalic dogs versus non‐brachycephalic dogs](https://onlinelibrary.wiley.com/doi/10.1111/vru.12922)
+* [Prevalence and Characterization of Urinary Tract Infection in Owned Dogs and Cats From Spain](https://authors.elsevier.com/c/1cU726utnvw9Tq)
