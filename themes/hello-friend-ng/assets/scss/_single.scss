@@ -1,7 +1,7 @@
 .post {
   width: 100%;
   max-width: 800px;
-  text-align: left;
+  text-align: justify;
   padding: 20px;
   margin: 20px auto;
 
@@ -21,6 +21,7 @@
     font-family: $title-font;
     font-size: 2.625rem;
     margin: 0 0 20px;
+    text-align: center;
 
     @media #{$media-size-phone} {
       font-size: 2rem;
