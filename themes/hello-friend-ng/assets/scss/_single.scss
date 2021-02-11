@@ -4,12 +4,17 @@
   text-align: justify;
   padding: 20px;
   margin: 20px auto;
+  
+  // Font details
+  font-size: 1rem;
+  line-height: 1.7;
+  letter-spacing: 0.09em;
+  color: #333;
+  font-family: $post-font;
 
   @media #{$media-size-tablet} {
     max-width: 600px;
   }
-
-  font-family: $post-font;
 
   &-date {
     &:after {
